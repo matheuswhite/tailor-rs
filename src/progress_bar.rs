@@ -1,6 +1,5 @@
 use std::io;
 use std::io::Write;
-use std::thread::current;
 use crate::message::Message;
 
 pub struct ProgressBar {

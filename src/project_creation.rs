@@ -1,14 +1,8 @@
 extern crate reqwest;
 
-use std::cmp::min;
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::process::ExitStatus;
-use std::str::from_utf8;
-use clap::builder::Str;
+use std::path::PathBuf;
 use crate::message::Message;
 use crate::TailorErr;
-use futures_util::StreamExt;
 use crate::disk::Disk;
 use crate::progress_bar::ProgressBar;
 use crate::remote_repo::Github;
