@@ -9,6 +9,7 @@ mod disk;
 
 use clap::Parser;
 use crate::cli::{Cli, CliCommand};
+use crate::message::Message;
 use crate::project_creation::ProjectBuilder;
 
 #[derive(PartialEq, PartialOrd, Debug)]
@@ -32,6 +33,8 @@ async fn main() {
             builder.enable_git();
         }
 
-        builder.build().await;
+        if let Err(_) = builder.build().await {
+            Message::fail(&format!("Cannot create \"{}\" project", name)).print();
+        }
     }
 }
