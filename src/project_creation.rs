@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitStatus;
 use std::str::from_utf8;
 use clap::builder::Str;
-use crate::command::Command;
+use crate::message::Message;
 use crate::TailorErr;
 use futures_util::StreamExt;
 use crate::disk::Disk;
@@ -92,7 +92,7 @@ impl ProjectBuilder {
 
         self.create_hat_toml()?;
 
-        Command::ok("Created", &format!("{} @ {}", self.project_name, VERSION)).print();
+        Message::ok("Created", &format!("{} @ {}", self.project_name, VERSION)).print();
         Ok(())
     }
 
@@ -101,14 +101,14 @@ impl ProjectBuilder {
             std::fs::create_dir(&self.project_name).unwrap();
         } else if !dir_is_empty(&self.project_name) {
             if self.overwrite {
-                Command::warning(&format!("Directory \"{}\" is not empty, but the overwrite flag was enabled", &self.project_name))
+                Message::warning(&format!("Directory \"{}\" is not empty, but the overwrite flag was enabled", &self.project_name))
                     .print();
 
                 clear_dir_content(&self.project_name);
 
-                Command::ok("Cleared", &format!("{} is now clean", &self.project_name)).print();
+                Message::ok("Cleared", &format!("{} is now clean", &self.project_name)).print();
             } else {
-                Command::fail(&format!("Directory \"{}\" is not an empty directory", &self.project_name))
+                Message::fail(&format!("Directory \"{}\" is not an empty directory", &self.project_name))
                     .print();
 
                 return Err(TailorErr::NonEmptyDir);
@@ -128,7 +128,7 @@ impl ProjectBuilder {
             progress_bar.next();
         }
 
-        Command::ok("Created", &dirs.join(", ")).print();
+        Message::ok("Created", &dirs.join(", ")).print();
 
         Ok(())
     }
@@ -143,7 +143,7 @@ impl ProjectBuilder {
             self.repository.get_n_store("bridge/", "rust/bridge/", file).await;
             progress_bar.next();
         }
-        Command::ok("Downloaded", &files.join(", ")).print();
+        Message::ok("Downloaded", &files.join(", ")).print();
 
         Ok(())
     }
@@ -166,7 +166,7 @@ impl ProjectBuilder {
         self.repository.disk().create_store("rust/CMakeLists.txt", cmake_content);
         progress_bar.next();
 
-        Command::ok("Generated", "rust files generated").print();
+        Message::ok("Generated", "rust files generated").print();
 
         Ok(())
     }
@@ -189,7 +189,7 @@ impl ProjectBuilder {
         self.repository.disk().create_store("CMakeLists.txt", cmake_content);
         progress_bar.next();
 
-        Command::ok("Generated", "c files generated").print();
+        Message::ok("Generated", "c files generated").print();
 
         Ok(())
     }
@@ -207,7 +207,7 @@ impl ProjectBuilder {
         self.repository.disk().create_store(".gitignore", dot_gitignore);
         progress_bar.next();
 
-        Command::ok("Created", "git/ and .gitignore created").print();
+        Message::ok("Created", "git/ and .gitignore created").print();
 
         assert_eq!(output.status.code(), Some(0));
 
@@ -231,7 +231,7 @@ impl ProjectBuilder {
 
         self.repository.disk().create_store("Tailor.toml", content);
 
-        Command::ok("Saved", "Project options saved at Tailor.toml").print();
+        Message::ok("Saved", "Project options saved at Tailor.toml").print();
 
         Ok(())
     }

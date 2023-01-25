@@ -1,6 +1,6 @@
 extern crate core;
 
-mod command;
+mod message;
 mod cli;
 mod progress_bar;
 mod project_creation;
@@ -15,7 +15,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use clap::Parser;
 
-use crate::command::Command;
+use crate::message::Message;
 use crate::progress_bar::ProgressBar;
 use crate::cli::{Cli, CliCommand};
 use crate::project_creation::ProjectBuilder;
