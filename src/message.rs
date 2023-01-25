@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, write};
+use std::fmt::{Display, Formatter};
 use colored::*;
 
 pub enum Message {
@@ -6,6 +6,7 @@ pub enum Message {
     InProgress(String, usize, usize),
     Fail(String),
     Warning(String),
+    #[allow(dead_code)]
     NoAction(String),
 }
 
@@ -31,6 +32,7 @@ impl Message {
         Message::Warning(description.to_string())
     }
 
+    #[allow(dead_code)]
     pub fn no_action(message: &str) -> Self {
         Message::NoAction(message.to_string())
     }

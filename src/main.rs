@@ -7,16 +7,7 @@ mod project_creation;
 mod remote_repo;
 mod disk;
 
-use std::fmt::{Display, Formatter, write};
-use std::thread::sleep;
-use std::time::Duration;
-use std::{io, vec};
-use std::io::Write;
-use std::path::{Path, PathBuf};
 use clap::Parser;
-
-use crate::message::Message;
-use crate::progress_bar::ProgressBar;
 use crate::cli::{Cli, CliCommand};
 use crate::project_creation::ProjectBuilder;
 
@@ -29,6 +20,7 @@ pub enum TailorErr {
 async fn main() {
     let args = Cli::parse();
 
+    #[allow(irrefutable_let_patterns)]
     if let CliCommand::New { git, force, name } = args.command {
         let mut builder = ProjectBuilder::new(&name);
 
