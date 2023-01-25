@@ -128,7 +128,7 @@ impl ProjectBuilder {
     }
 
     async fn download_bridge_files(&self) -> Result<(), TailorErr> {
-        let files = ["hat_bridge.c", "zbus_bridge.c", "rustlib_bridge.c"];
+        let files = ["hat_bridge.c", "zbus_bridge.c", "rustlib_bridge.c", "bridge.h"];
 
         let mut progress_bar = ProgressBar::new("Downloading", files.len(), true);
         progress_bar.print();
