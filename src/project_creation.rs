@@ -92,7 +92,7 @@ impl ProjectBuilder {
 
         self.create_hat_toml()?;
 
-        Message::ok("Created", &format!("{} @ {}", self.project_name, VERSION)).print();
+        Message::ok("Finished", &format!("{} @ {}", self.project_name, VERSION)).print();
         Ok(())
     }
 
