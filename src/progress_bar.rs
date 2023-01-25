@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 use std::thread::current;
-use crate::command::Command;
+use crate::message::Message;
 
 pub struct ProgressBar {
     total: usize,
@@ -21,7 +21,7 @@ impl ProgressBar {
     }
 
     pub fn print(&self) {
-        let cmd = Command::in_progress(&self.message, self.current, self.total);
+        let cmd = Message::in_progress(&self.message, self.current, self.total);
 
         if self.current >= self.total {
             if self.print_en {
@@ -38,7 +38,7 @@ impl ProgressBar {
 }
 
 impl Iterator for ProgressBar {
-    type Item = Command;
+    type Item = Message;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.current += 1;
@@ -48,7 +48,7 @@ impl Iterator for ProgressBar {
         if self.current >= self.total {
             None
         } else {
-            Some(Command::in_progress(&self.message, self.current, self.total))
+            Some(Message::in_progress(&self.message, self.current, self.total))
         }
     }
 }
