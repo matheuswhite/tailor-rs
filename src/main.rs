@@ -1,21 +1,17 @@
 extern crate core;
 
-mod message;
 mod cli;
+mod disk;
+mod error;
+mod message;
 mod progress_bar;
 mod project_creation;
 mod remote_repo;
-mod disk;
 
-use clap::Parser;
 use crate::cli::{Cli, CliCommand};
 use crate::message::Message;
 use crate::project_creation::ProjectBuilder;
-
-#[derive(PartialEq, PartialOrd, Debug)]
-pub enum TailorErr {
-    NonEmptyDir,
-}
+use clap::Parser;
 
 #[tokio::main]
 async fn main() {
@@ -33,8 +29,11 @@ async fn main() {
             builder.enable_git();
         }
 
-        if let Err(_) = builder.build().await {
-            Message::fail(&format!("Cannot create \"{}\" project", name)).print();
+        if let Err(err) = builder.build().await {
+            Message::fail(&format!(
+                "Cannot create \"{name}\" project. Reason: {err:?}"
+            ))
+            .print();
         }
     }
 }

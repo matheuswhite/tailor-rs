@@ -21,18 +21,28 @@ impl Github {
         &self.disk
     }
 
-    pub async fn get(&self, path: &str) -> String {
-        let url = Github::URL_PREFIX.to_string() + &self.user + "/" + &self.reposiroty + "/main/" + path;
+    pub async fn get(&self, path: &str) -> anyhow::Result<String> {
+        let url =
+            Github::URL_PREFIX.to_string() + &self.user + "/" + &self.reposiroty + "/main/" + path;
 
-        let rsp = reqwest::get(url).await.unwrap();
-        rsp.text().await.unwrap()
+        let rsp = reqwest::get(url).await?;
+        let text = rsp.text().await?;
+
+        Ok(text)
     }
 
-    pub async fn get_n_store(&self, remote_path: &str, local_path: &str, file: &str) {
+    pub async fn get_n_store(
+        &self,
+        remote_path: &str,
+        local_path: &str,
+        file: &str,
+    ) -> anyhow::Result<()> {
         let remote_filepath = remote_path.to_string() + file;
         let local_filepath = local_path.to_string() + file;
 
-        let content = self.get(&remote_filepath).await;
-        self.disk.create_store(&local_filepath, content);
+        let content = self.get(&remote_filepath).await?;
+        self.disk.create_store(&local_filepath, content)?;
+
+        Ok(())
     }
 }

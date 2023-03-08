@@ -14,3 +14,4 @@ tokio = { version = "1", features = ["full"] }
 futures-util = "0.3.14"
 serde = { version = "1.0.152", features = ["derive"] }
 toml = "0.5.11"
+anyhow = "1.0.69"

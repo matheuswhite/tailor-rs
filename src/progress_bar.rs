@@ -25,12 +25,12 @@ impl ProgressBar {
         if self.current >= self.total {
             if self.print_en {
                 print!("{}\r", " ".repeat(cmd.to_string().len()));
-                io::stdout().flush().unwrap();
+                io::stdout().flush().expect("Cannot flush stdout");
             }
         } else {
             if self.print_en {
                 print!("{}\r", cmd);
-                io::stdout().flush().unwrap();
+                io::stdout().flush().expect("Cannot flush stdout");
             }
         }
     }
