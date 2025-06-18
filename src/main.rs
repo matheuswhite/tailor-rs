@@ -33,5 +33,15 @@ fn main() {
         }
     }
 
-    eprintln!("Usage: new <path> [--bin | --lib]");
+    println!("C language package manager\n");
+    println!("Usage: tailor [COMMAND] [OPTIONS] <path>\n");
+    println!("Options:");
+    println!("  --bin       Create a binary package (only for `new` command) (default)");
+    println!("  --lib       Create a library package (only for `new` command)");
+    println!("  --debug     Build (or run) in debug mode (default)");
+    println!("  --release   Build (or run) in release mode\n");
+    println!("Commands:");
+    println!("  new         Create a new package");
+    println!("  build       Build the package");
+    println!("  run         Run the package");
 }
