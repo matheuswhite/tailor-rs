@@ -1,5 +1,5 @@
+use sha2::{Digest, Sha256};
 use std::path::PathBuf;
-
 use toml::Value;
 
 #[derive(Debug)]
@@ -21,6 +21,30 @@ pub enum Dependency {
 }
 
 impl Dependency {
+    pub fn hash(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        match self {
+            Self::Registry { name, version } => {
+                hasher.update(name.as_bytes());
+                hasher.update(version.as_bytes());
+            }
+            Self::Git {
+                name,
+                url,
+                revision,
+            } => {
+                hasher.update(name.as_bytes());
+                hasher.update(url.as_bytes());
+                hasher.update(revision.as_bytes());
+            }
+            Self::Local { name, path } => {
+                hasher.update(name.as_bytes());
+                hasher.update(path.to_string_lossy().as_bytes());
+            }
+        }
+        hasher.finalize().to_vec()
+    }
+
     pub fn from_content(name: &str, content: &Value) -> Result<Self, String> {
         [
             Self::parse_registry_string_dependency,

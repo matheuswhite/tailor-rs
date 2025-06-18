@@ -50,13 +50,28 @@ impl BuildPkg {
             .collect::<Vec<String>>();
         let includes = [includes_ext, includes].concat();
 
-        if abs_path
-            .join("build")
-            .join(self.mode.to_string())
-            .join("CMakeLists.txt")
-            .exists()
-        {
-            return Ok(pkg);
+        if let Ok(tailor_cache) = std::fs::read(
+            abs_path
+                .join("build")
+                .join(self.mode.to_string())
+                .join("TailorCache"),
+        ) {
+            if tailor_cache == pkg.hash() {
+                println!("The Tailor.toml file has not changed, skipping CMakeLists update.");
+                return Ok(pkg);
+            } else {
+                println!(
+                    "Tailor.toml file has changed, updating CMakeLists for package `{}` in {} mode",
+                    pkg.name(),
+                    self.mode.to_string()
+                );
+            }
+        } else {
+            println!(
+                "Creating CMakeLists.txt for package `{}` in {} mode",
+                pkg.name(),
+                self.mode.to_string()
+            );
         }
 
         let cmake_content = content
@@ -73,6 +88,15 @@ impl BuildPkg {
             cmake_content,
         )
         .map_err(|e| format!("Failed to write CMakeLists.txt: {}", e))?;
+
+        std::fs::write(
+            abs_path
+                .join("build")
+                .join(self.mode.to_string())
+                .join("TailorCache"),
+            pkg.hash(),
+        )
+        .map_err(|e| format!("Failed to write TailorCache: {}", e))?;
 
         Ok(pkg)
     }

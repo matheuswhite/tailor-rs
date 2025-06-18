@@ -1,6 +1,7 @@
 use toml::Table;
 
 use crate::dependency::Dependency;
+use sha2::{Digest, Sha256};
 use std::path::Path;
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -22,6 +23,22 @@ pub struct Package {
 }
 
 impl Package {
+    pub fn hash(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.update(self.name.as_bytes());
+        hasher.update(self.version.as_bytes());
+        for dep in &self.dependencies {
+            hasher.update(dep.hash());
+        }
+        for src in &self.sources {
+            hasher.update(src.as_bytes());
+        }
+        for inc in &self.includes {
+            hasher.update(inc.as_bytes());
+        }
+        hasher.finalize().to_vec()
+    }
+
     pub fn dependencies(&self) -> &[Dependency] {
         &self.dependencies
     }
