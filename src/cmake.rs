@@ -11,7 +11,7 @@ pub fn gen_cmake(mode: &Mode, path: &Path) -> Result<(), String> {
         .arg(format!("-DCMAKE_BUILD_TYPE={}", mode.to_string()))
         .status()
         .map(|_| ())
-        .map_err(|e| format!("Failed to build: {}", e))
+        .map_err(|e| format!("fail to build: {}", e))
 }
 
 pub fn build(mode: &Mode, path: &Path) -> Result<(), String> {
@@ -20,5 +20,5 @@ pub fn build(mode: &Mode, path: &Path) -> Result<(), String> {
         .arg(path.join("build").join(mode.to_string()))
         .status()
         .map(|_| ())
-        .map_err(|e| format!("Failed to run: {}", e))
+        .map_err(|e| format!("fail to run: {}", e))
 }

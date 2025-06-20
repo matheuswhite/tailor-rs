@@ -1,16 +1,17 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dirs::config_dir;
 
 use crate::{
     dependency::Dependency,
+    fmt::Progress,
     git::{git_checkout, git_clone},
     package::Package,
 };
 
 fn dependency_storage_path(dependency: &Dependency) -> PathBuf {
     let pkg_storage_fullpath = config_dir()
-        .expect("Failed to get config directory")
+        .expect("fail to get config directory")
         .join("tailor")
         .join("packages");
 
@@ -37,10 +38,16 @@ fn fetch_git_url(name: &str, version: &str) -> Result<String, String> {
         name, version
     );
 
-    reqwest::blocking::get(url)
-        .map_err(|_| "Failed to fetch URL".to_string())?
+    let res = reqwest::blocking::get(url)
+        .map_err(|_| "fail to fetch URL".to_string())?
         .text()
-        .map_err(|_| "Failed to fetch URL".to_string())
+        .map_err(|_| "fail to fetch URL".to_string())?;
+
+    if res.is_empty() {
+        return Err(format!("fail to get git URL for {name} @ {version}"));
+    }
+
+    Ok(res)
 }
 
 fn download_git_dependency(name: &str, url: &str, revision: &str) -> Result<(), String> {
@@ -50,16 +57,29 @@ fn download_git_dependency(name: &str, url: &str, revision: &str) -> Result<(), 
         revision: revision.to_string(),
     });
 
+    let download = Progress::new("Downloading", format!("{} @ {}", name, revision));
+
     git_clone(url, &dep_path)?;
 
     git_checkout(revision, &dep_path)?;
 
+    download.finish("Downloaded", format!("{} @ {}", name, revision));
+
     Ok(())
 }
 
-fn dependency_download(dependency: &Dependency) -> Result<(), String> {
+fn dependency_download(parent_pkg_path: &Path, dependency: &Dependency) -> Result<(), String> {
     match dependency {
-        Dependency::Local { .. } => Ok(()),
+        Dependency::Local { path, name } => {
+            let path = parent_pkg_path.join(path);
+            let import = Progress::new("Importing", format!("{} from `{}`", name, path.display()));
+
+            let pkg = Package::from_file(&path.join("Tailor.toml"))?;
+
+            import.finish("Imported", format!("{} @ {}", pkg.name(), pkg.version()));
+
+            Ok(())
+        }
         Dependency::Registry { name, version } => {
             let url = fetch_git_url(name, version)?;
             download_git_dependency(name, &url, version)
@@ -94,13 +114,16 @@ fn dependency_include_paths(dependency: &Dependency) -> Result<Vec<String>, Stri
         .collect())
 }
 
-pub fn resolve_dependencies(pkg: &Package) -> Result<(Vec<String>, Vec<String>), String> {
+pub fn resolve_dependencies(
+    pkg: &Package,
+    pkg_path: &Path,
+) -> Result<(Vec<String>, Vec<String>), String> {
     for dependency in pkg.dependencies() {
         if dependency_is_valid(dependency) {
             continue;
         }
 
-        dependency_download(dependency)?;
+        dependency_download(pkg_path, dependency)?;
     }
 
     let sources = pkg

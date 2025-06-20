@@ -14,7 +14,6 @@ pub enum PackageType {
 #[derive(Debug)]
 pub struct Package {
     name: String,
-    #[allow(unused)]
     version: String,
     dependencies: Vec<Dependency>,
     pkg_type: PackageType,
@@ -59,9 +58,13 @@ impl Package {
         self.pkg_type
     }
 
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
     pub fn from_file(filepath: &Path) -> Result<Self, String> {
         let content = std::fs::read_to_string(filepath)
-            .map_err(|e| format!("Failed to read file {}: {}", filepath.display(), e))?;
+            .map_err(|e| format!("fail to read file {}: {}", filepath.display(), e))?;
 
         Self::from_content(&content)
     }
@@ -71,25 +74,41 @@ impl Package {
             .parse::<Table>()
             .map_err(|_| format!("Invalid Toml format"))?;
 
+        let name = parsed
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or("Missing 'name' field")?
+            .to_string();
+
+        let dependencies = parsed
+            .get("dependencies")
+            .and_then(|v| v.as_table())
+            .map_or(vec![], |deps| {
+                deps.iter()
+                    .map(|(k, v)| Dependency::from_content(k, v))
+                    .collect()
+            });
+
+        if dependencies.iter().any(|dep| dep.is_err()) {
+            let invalid_dependencies = dependencies
+                .into_iter()
+                .filter_map(|dep| dep.err())
+                .collect::<Vec<String>>()
+                .join("\n\t- ");
+            return Err(format!(
+                "fail to parse some dependencies of package '{}':\n\t- {}",
+                name, invalid_dependencies
+            ));
+        }
+
         Ok(Package {
-            name: parsed
-                .get("name")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'name' field")?
-                .to_string(),
+            name,
             version: parsed
                 .get("version")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'version' field")?
                 .to_string(),
-            dependencies: parsed
-                .get("dependencies")
-                .and_then(|v| v.as_table())
-                .map_or(vec![], |deps| {
-                    deps.iter()
-                        .filter_map(|(k, v)| Dependency::from_content(k, v).ok())
-                        .collect()
-                }),
+            dependencies: dependencies.into_iter().filter_map(Result::ok).collect(),
             pkg_type: if parsed.get("lib").is_some() {
                 PackageType::Library
             } else {
@@ -99,7 +118,11 @@ impl Package {
                 vec!["src/*.c".to_string()],
                 |arr| {
                     arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
+                        .map(|v| {
+                            v.as_str()
+                                .expect("src must be a list of strings")
+                                .to_string()
+                        })
                         .collect()
                 },
             ),
@@ -107,7 +130,11 @@ impl Package {
                 vec!["include/".to_string()],
                 |arr| {
                     arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
+                        .map(|v| {
+                            v.as_str()
+                                .expect("include must be a list of strings")
+                                .to_string()
+                        })
                         .collect()
                 },
             ),

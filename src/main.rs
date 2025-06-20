@@ -5,6 +5,7 @@ mod cmake;
 mod command;
 mod dependency;
 mod dependency_manager;
+mod fmt;
 mod git;
 mod mode;
 mod new_pkg;
@@ -13,7 +14,7 @@ mod run_pkg;
 
 use std::env::args;
 
-use crate::{build_pkg::BuildPkg, command::Command, new_pkg::NewPkg, run_pkg::RunPkg};
+use crate::{build_pkg::BuildPkg, command::Command, fmt::error, new_pkg::NewPkg, run_pkg::RunPkg};
 
 fn main() {
     let commands: &mut [&mut dyn Command] = &mut [
@@ -27,7 +28,7 @@ fn main() {
         if cmd.parse_args(&args[1..]).is_some() {
             let res = cmd.execute();
             if let Err(e) = res {
-                eprintln!("Error: {}", e);
+                eprintln!("\n{}: {}", error(), e);
             }
             return;
         }

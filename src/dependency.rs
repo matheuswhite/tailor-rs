@@ -55,10 +55,7 @@ impl Dependency {
         .iter()
         .filter_map(|parser| parser(name, content).ok())
         .next()
-        .ok_or(format!(
-            "Failed to parse dependency '{}' with content: {:?}",
-            name, content
-        ))
+        .ok_or(name.to_string())
     }
 
     fn parse_registry_string_dependency(name: &str, content: &Value) -> Result<Self, String> {
@@ -68,7 +65,7 @@ impl Dependency {
                 name: name.to_string(),
                 version: version.to_string(),
             })
-            .ok_or_else(|| format!("Invalid registry dependency format for '{}'", name))
+            .ok_or_else(|| format!("invalid registry dependency format for '{}'", name))
     }
 
     fn parse_registry_dependency(name: &str, content: &Value) -> Result<Self, String> {
@@ -83,7 +80,7 @@ impl Dependency {
                         .map(String::from)?,
                 })
             })
-            .ok_or_else(|| format!("Invalid registry dependency format for '{}'", name))
+            .ok_or_else(|| format!("invalid registry dependency format for '{}'", name))
     }
 
     fn parse_git_dependency(name: &str, content: &Value) -> Result<Self, String> {
@@ -100,7 +97,7 @@ impl Dependency {
                         .unwrap_or_else(|| "main".to_string()),
                 })
             })
-            .ok_or_else(|| format!("Invalid git dependency format for '{}'", name))
+            .ok_or_else(|| format!("invalid git dependency format for '{}'", name))
     }
 
     fn parse_local_dependency(name: &str, content: &Value) -> Result<Self, String> {
@@ -115,6 +112,6 @@ impl Dependency {
                         .map(PathBuf::from)?,
                 })
             })
-            .ok_or_else(|| format!("Invalid local dependency format for '{}'", name))
+            .ok_or_else(|| format!("invalid local dependency format for '{}'", name))
     }
 }

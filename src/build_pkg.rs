@@ -4,6 +4,7 @@ use crate::{
     cmake,
     command::Command,
     dependency_manager::resolve_dependencies,
+    fmt::{info, success},
     mode::Mode,
     package::{Package, PackageType},
 };
@@ -29,7 +30,7 @@ impl BuildPkg {
         let abs_path = self
             .path
             .canonicalize()
-            .map_err(|e| format!("Failed to canonicalize path: {}", e))?;
+            .map_err(|e| format!("fail to canonicalize path: {}", e))?;
 
         if !abs_path.join("Tailor.toml").exists() {
             return Err("Tailor.toml file does not exist".to_string());
@@ -57,18 +58,19 @@ impl BuildPkg {
                 .join("TailorCache"),
         ) {
             if tailor_cache == pkg.hash() {
-                println!("The Tailor.toml file has not changed, skipping CMakeLists update.");
                 return Ok(pkg);
             } else {
                 println!(
-                    "Tailor.toml file has changed, updating CMakeLists for package `{}` in {} mode",
+                    "{} CMakeLists for package `{}` in {} mode",
+                    info("Updating"),
                     pkg.name(),
                     self.mode.to_string()
                 );
             }
         } else {
             println!(
-                "Creating CMakeLists.txt for package `{}` in {} mode",
+                "{} CMakeLists.txt for package `{}` in {} mode",
+                success("Creating"),
                 pkg.name(),
                 self.mode.to_string()
             );
@@ -88,6 +90,15 @@ impl BuildPkg {
             cmake_content,
         )
         .map_err(|e| format!("Failed to write CMakeLists.txt: {}", e))?;
+
+        println!(
+            "{} CMake for `{}` in {} mode",
+            info("Generating"),
+            pkg.name(),
+            self.mode.to_string()
+        );
+
+        cmake::gen_cmake(&self.mode, &self.path)?;
 
         std::fs::write(
             abs_path
@@ -151,7 +162,7 @@ impl Command for BuildPkg {
         let mode_name = self.mode.to_string();
         let pkg = Package::from_file(&self.path.join("Tailor.toml"))?;
 
-        let (sources_ext, include_ext) = resolve_dependencies(&pkg)?;
+        let (sources_ext, include_ext) = resolve_dependencies(&pkg, &self.path)?;
 
         let pkg = match pkg.pkg_type() {
             PackageType::Binary => {
@@ -162,9 +173,12 @@ impl Command for BuildPkg {
             }
         };
 
-        println!("Building package `{}` in {} mode", pkg.name(), mode_name);
-
-        cmake::gen_cmake(&self.mode, &self.path)?;
+        println!(
+            "{} `{}` in {} mode",
+            success("Building"),
+            pkg.name(),
+            mode_name
+        );
 
         cmake::build(&self.mode, &self.path)?;
 

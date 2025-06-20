@@ -3,6 +3,7 @@ use std::{path::PathBuf, process};
 use crate::{
     build_pkg::BuildPkg,
     command::Command,
+    fmt::success,
     mode::Mode,
     package::{Package, PackageType},
 };
@@ -60,14 +61,14 @@ impl Command for RunPkg {
         let abs_path = self
             .path
             .canonicalize()
-            .map_err(|_| "Failed to get absolute path")?;
+            .map_err(|_| "fail to get absolute path")?;
 
         let pkg = Package::from_file(&abs_path.join("Tailor.toml"))
-            .map_err(|_| "Failed to load package")?;
+            .map_err(|_| "fail to load package")?;
 
         match pkg.pkg_type() {
             PackageType::Library => {
-                return Err("Cannot run a library package".to_string());
+                return Err("It's not possible run a library package".to_string());
             }
             PackageType::Binary => {
                 let mut build = BuildPkg::default();
@@ -80,9 +81,16 @@ impl Command for RunPkg {
                     .ok_or("Failed to parse build arguments".to_string())?;
                 build.execute()?;
 
+                println!(
+                    "{} `{}` in {} mode",
+                    success("Running"),
+                    pkg.name(),
+                    mode_name
+                );
+
                 process::Command::new(abs_path.join("build").join(mode_name).join(pkg.name()))
                     .status()
-                    .map_err(|_| "Failed to execute binary")?;
+                    .map_err(|_| "fail to execute binary")?;
             }
         }
 
