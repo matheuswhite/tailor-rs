@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use crate::command::Command;
+use crate::commands::command::Command;
 use crate::package::PackageType;
 
 #[derive(Default)]
@@ -69,8 +69,8 @@ mod bin {
 
     use crate::fmt::success;
 
-    const MAIN_C: &str = include_str!("../template/main.c");
-    const TAILOR_MANIFEST: &str = include_str!("../template/bin/Tailor.toml");
+    const MAIN_C: &str = include_str!("../../template/main.c");
+    const TAILOR_MANIFEST: &str = include_str!("../../template/bin/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
         let abs_path = Path::new(".")
@@ -112,9 +112,9 @@ mod lib {
 
     use crate::fmt::success;
 
-    const LIB_C: &str = include_str!("../template/lib.c");
-    const LIB_H: &str = include_str!("../template/lib.h");
-    const TAILOR_MANIFEST: &str = include_str!("../template/lib/Tailor.toml");
+    const LIB_C: &str = include_str!("../../template/lib.c");
+    const LIB_H: &str = include_str!("../../template/lib.h");
+    const TAILOR_MANIFEST: &str = include_str!("../../template/lib/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
         let abs_path = Path::new(".")

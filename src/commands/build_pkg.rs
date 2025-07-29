@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{
     cmake,
-    command::Command,
+    commands::command::Command,
     dependency_manager::resolve_dependencies,
     fmt::{info, success},
     mode::Mode,

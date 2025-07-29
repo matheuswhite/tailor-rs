@@ -1,20 +1,17 @@
 #![deny(warnings)]
 
-mod build_pkg;
 mod cmake;
-mod command;
+mod commands;
 mod dependency;
 mod dependency_manager;
 mod fmt;
 mod git;
 mod mode;
-mod new_pkg;
 mod package;
-mod run_pkg;
 
 use std::env::args;
 
-use crate::{build_pkg::BuildPkg, command::Command, fmt::error, new_pkg::NewPkg, run_pkg::RunPkg};
+use crate::{commands::build_pkg::BuildPkg, commands::command::Command, fmt::error, commands::new_pkg::NewPkg, commands::run_pkg::RunPkg};
 
 fn main() {
     let commands: &mut [&mut dyn Command] = &mut [

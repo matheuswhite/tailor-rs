@@ -1,8 +1,8 @@
 use std::{path::PathBuf, process};
 
 use crate::{
-    build_pkg::BuildPkg,
-    command::Command,
+    commands::build_pkg::BuildPkg,
+    commands::command::Command,
     fmt::success,
     mode::Mode,
     package::{Package, PackageType},
