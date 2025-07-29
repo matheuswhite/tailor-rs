@@ -11,13 +11,17 @@ mod package;
 
 use std::env::args;
 
-use crate::{commands::build_pkg::BuildPkg, commands::command::Command, fmt::error, commands::new_pkg::NewPkg, commands::run_pkg::RunPkg};
+use crate::{
+    commands::build_pkg::BuildPkg, commands::clean_pkg::CleanPkg, commands::command::Command,
+    commands::new_pkg::NewPkg, commands::run_pkg::RunPkg, fmt::error,
+};
 
 fn main() {
     let commands: &mut [&mut dyn Command] = &mut [
         &mut NewPkg::default(),
         &mut BuildPkg::default(),
         &mut RunPkg::default(),
+        &mut CleanPkg::default(),
     ];
     let args = args().collect::<Vec<String>>();
 
