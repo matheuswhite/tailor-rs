@@ -15,14 +15,17 @@ pub fn warning() -> String {
     "\x1B[33;1mwarning\x1B[0m".to_string()
 }
 
+#[allow(unused)]
 pub fn info(title: &str) -> String {
     let title_len = title.len();
     let spaces = " ".repeat(12 - title_len);
     format!("{}\x1B[36;1m{}\x1B[0m", spaces, title)
 }
 
+#[allow(unused)]
 pub struct Progress;
 
+#[allow(unused)]
 impl Progress {
     pub fn new(title: &str, message: String) -> Self {
         print!("{} {} ...", info(title), message);

@@ -1,4 +1,4 @@
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub enum Mode {
     #[default]
     Debug,
@@ -12,16 +12,16 @@ impl TryFrom<&str> for Mode {
         match value {
             "--debug" => Ok(Mode::Debug),
             "--release" => Ok(Mode::Release),
-            _ => Err(format!("invalid mode: {}", value)),
+            _ => Err(format!("Invalid mode: {}", value)),
         }
     }
 }
 
-impl ToString for Mode {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Mode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Mode::Debug => "debug".to_string(),
-            Mode::Release => "release".to_string(),
+            Mode::Debug => write!(f, "debug"),
+            Mode::Release => write!(f, "release"),
         }
     }
 }

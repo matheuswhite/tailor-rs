@@ -1,143 +1,95 @@
-use toml::Table;
+use crate::{
+    external_tool::registry::Registry,
+    manifest::{Manifest, dependency::Dependency, kv::KeyValue, package_type::PackageType},
+    storage::Storage,
+};
 
-use crate::dependency::Dependency;
-use sha2::{Digest, Sha256};
-use std::path::Path;
-
-#[derive(Default, Clone, Copy, Debug)]
-pub enum PackageType {
-    #[default]
-    Binary,
-    Library,
-}
-
-#[derive(Debug)]
 pub struct Package {
-    name: String,
-    version: String,
-    dependencies: Vec<Dependency>,
-    pkg_type: PackageType,
-    sources: Vec<String>,
-    includes: Vec<String>,
+    manifest: Manifest,
+    dependencies: Vec<Manifest>,
 }
 
 impl Package {
-    pub fn hash(&self) -> Vec<u8> {
-        let mut hasher = Sha256::new();
-        hasher.update(self.name.as_bytes());
-        hasher.update(self.version.as_bytes());
-        for dep in &self.dependencies {
-            hasher.update(dep.hash());
-        }
-        for src in &self.sources {
-            hasher.update(src.as_bytes());
-        }
-        for inc in &self.includes {
-            hasher.update(inc.as_bytes());
-        }
-        hasher.finalize().to_vec()
-    }
+    pub fn load_from_manifest(mut manifest: Manifest, registry: &Registry) -> Result<Self, String> {
+        let mut open_list = manifest.dependencies().clone();
+        let mut closed_list = vec![];
+        let mut dependencies = vec![];
 
-    pub fn dependencies(&self) -> &[Dependency] {
-        &self.dependencies
-    }
+        while let Some(dependency) = open_list.pop() {
+            if closed_list.contains(&dependency) {
+                continue;
+            }
 
-    pub fn sources(&self) -> &[String] {
-        &self.sources
-    }
+            let dep_manifest = Storage::download(dependency.clone(), registry)?;
+            if !dep_manifest.is_library() {
+                return Err(format!(
+                    "Dependency {} is not a library package",
+                    dep_manifest.name()
+                ));
+            }
 
-    pub fn includes(&self) -> &[String] {
-        &self.includes
-    }
+            closed_list.push(dependency.clone());
+            dependencies.push(dep_manifest.clone());
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+            if dep_manifest.is_tool() {
+                if manifest.tool().is_some() {
+                    return Err("Multiple tools specified in dependencies".to_string());
+                }
 
-    pub fn pkg_type(&self) -> PackageType {
-        self.pkg_type
-    }
+                manifest.set_tool(dependency);
+            }
 
-    pub fn version(&self) -> &str {
-        &self.version
-    }
-
-    pub fn from_file(filepath: &Path) -> Result<Self, String> {
-        let content = std::fs::read_to_string(filepath)
-            .map_err(|e| format!("fail to read file {}: {}", filepath.display(), e))?;
-
-        Self::from_content(&content)
-    }
-
-    pub fn from_content(content: &str) -> Result<Self, String> {
-        let parsed = content
-            .parse::<Table>()
-            .map_err(|_| format!("Invalid Toml format"))?;
-
-        let name = parsed
-            .get("name")
-            .and_then(|v| v.as_str())
-            .ok_or("Missing 'name' field")?
-            .to_string();
-
-        let dependencies = parsed
-            .get("dependencies")
-            .and_then(|v| v.as_table())
-            .map_or(vec![], |deps| {
-                deps.iter()
-                    .map(|(k, v)| Dependency::from_content(k, v))
-                    .collect()
-            });
-
-        if dependencies.iter().any(|dep| dep.is_err()) {
-            let invalid_dependencies = dependencies
-                .into_iter()
-                .filter_map(|dep| dep.err())
-                .collect::<Vec<String>>()
-                .join("\n\t- ");
-            return Err(format!(
-                "fail to parse some dependencies of package '{}':\n\t- {}",
-                name, invalid_dependencies
-            ));
+            for dep in dep_manifest.dependencies() {
+                if !closed_list.contains(&dep) {
+                    open_list.push(dep);
+                }
+            }
         }
 
-        Ok(Package {
-            name,
-            version: parsed
-                .get("version")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'version' field")?
-                .to_string(),
-            dependencies: dependencies.into_iter().filter_map(Result::ok).collect(),
-            pkg_type: if parsed.get("lib").is_some() {
-                PackageType::Library
-            } else {
-                PackageType::Binary
-            },
-            sources: parsed.get("src").and_then(|v| v.as_array()).map_or(
-                vec!["src/*.c".to_string()],
-                |arr| {
-                    arr.iter()
-                        .map(|v| {
-                            v.as_str()
-                                .expect("src must be a list of strings")
-                                .to_string()
-                        })
-                        .collect()
-                },
-            ),
-            includes: parsed.get("include").and_then(|v| v.as_array()).map_or(
-                vec!["include/".to_string()],
-                |arr| {
-                    arr.iter()
-                        .map(|v| {
-                            v.as_str()
-                                .expect("include must be a list of strings")
-                                .to_string()
-                        })
-                        .collect()
-                },
-            ),
+        Ok(Self {
+            manifest,
+            dependencies,
         })
+    }
+
+    pub fn sources(&self) -> Vec<String> {
+        let mut sources = self.manifest.sources();
+        for dep in &self.dependencies {
+            sources.extend(dep.sources());
+        }
+        sources
+    }
+
+    pub fn tool(&self) -> Option<Dependency> {
+        self.manifest.tool()
+    }
+
+    pub fn includes(&self) -> Vec<String> {
+        let mut includes = self.manifest.includes();
+        for dep in &self.dependencies {
+            includes.extend(dep.includes());
+        }
+        includes
+    }
+
+    pub fn pkg_type(&self) -> Result<PackageType, String> {
+        match &self.manifest {
+            Manifest::Package { type_, .. } => Ok(*type_),
+            Manifest::Tool { .. } => Err("The manifest is for a tool, not a package".to_string()),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        self.manifest.name()
+    }
+
+    pub fn options(&self) -> Vec<KeyValue> {
+        match &self.manifest {
+            Manifest::Package { dependencies, .. } => dependencies
+                .iter()
+                .flat_map(|dep| dep.options().to_vec())
+                .collect::<Vec<_>>(),
+            Manifest::Tool { .. } => vec![],
+        }
     }
 }

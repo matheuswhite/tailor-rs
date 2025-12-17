@@ -1,22 +1,23 @@
 #![deny(warnings)]
 
-mod build_pkg;
-mod cmake;
+mod absolute_path;
 mod command;
-mod dependency;
-mod dependency_manager;
+mod config;
+mod external_tool;
 mod fmt;
-mod git;
+mod manifest;
 mod mode;
-mod new_pkg;
 mod package;
-mod run_pkg;
+mod storage;
 
+use crate::command::{build_pkg::BuildPkg, new_pkg::NewPkg, run_pkg::RunPkg};
+use crate::config::Config;
+use crate::{command::Command, fmt::error};
 use std::env::args;
 
-use crate::{build_pkg::BuildPkg, command::Command, fmt::error, new_pkg::NewPkg, run_pkg::RunPkg};
-
 fn main() {
+    Config::create_default_config();
+
     let commands: &mut [&mut dyn Command] = &mut [
         &mut NewPkg::default(),
         &mut BuildPkg::default(),
