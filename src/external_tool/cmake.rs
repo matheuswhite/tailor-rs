@@ -121,19 +121,41 @@ impl CMake {
         }
     }
 
+    pub fn write_tailor_lock(path: AbsolutePath, content: String) -> Result<(), String> {
+        let dest = path.inner().join("build").join("Tailor.lock");
+
+        std::fs::write(dest, content).map_err(|e| format!("Failed to write Tailor.lock: {}", e))
+    }
+
+    pub fn needs_recreate(path: AbsolutePath, manifest: String) -> bool {
+        let cmake_lists_exists = std::fs::metadata(path.inner().join("CMakeLists.txt")).is_ok();
+        let tailor_lock_exists = std::fs::metadata(path.inner().join("Tailor.lock")).is_ok();
+
+        if !cmake_lists_exists {
+            return true;
+        }
+
+        if !tailor_lock_exists {
+            return true;
+        }
+
+        let tailor_lock_content = std::fs::read_to_string(path.inner().join("Tailor.lock"));
+        if tailor_lock_content.is_err() {
+            return true;
+        }
+
+        if tailor_lock_content.unwrap() != manifest {
+            return true;
+        }
+
+        false
+    }
+
     fn create_binary_cmake_lists(
         sources: Vec<String>,
         includes: Vec<String>,
         path: AbsolutePath,
     ) -> Result<(), String> {
-        let cmake_lists_exists = std::fs::create_dir_all(path.inner())
-            .and_then(|_| std::fs::metadata(path.inner().join("CMakeLists.txt")))
-            .is_ok();
-
-        if cmake_lists_exists {
-            return Ok(());
-        }
-
         let cmake_content = bin::CMAKE_LISTS
             .replace("$pkg_name", "app")
             .replace("$sources", &sources.join(" "))
@@ -150,14 +172,6 @@ impl CMake {
         includes: Vec<String>,
         path: AbsolutePath,
     ) -> Result<(), String> {
-        let cmake_lists_exists = std::fs::create_dir_all(path.inner())
-            .and_then(|_| std::fs::metadata(path.inner().join("CMakeLists.txt")))
-            .is_ok();
-
-        if cmake_lists_exists {
-            return Ok(());
-        }
-
         let cmake_content = lib::CMAKE_LISTS
             .replace("$pkg_name", "app")
             .replace("$sources", &sources.join(" "))

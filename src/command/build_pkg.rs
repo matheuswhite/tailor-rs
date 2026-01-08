@@ -96,13 +96,16 @@ impl Command for BuildPkg {
             std::fs::create_dir_all(&path)
                 .map_err(|e| format!("fail to create build directory: {}", e))?;
 
-            // TODO: Regen if Tailor.toml changes
-            CMake::create_cmake_lists(
-                pkg_type,
-                sources.clone(),
-                includes.clone(),
-                path.try_into()?,
-            )?;
+            if CMake::needs_recreate(path.clone().try_into()?, manifest_content.clone()) {
+                CMake::create_cmake_lists(
+                    pkg_type,
+                    sources.clone(),
+                    includes.clone(),
+                    path.clone().try_into()?,
+                )?;
+            }
+
+            CMake::write_tailor_lock(path.try_into()?, manifest_content)?;
 
             println!(
                 "{} `{}` in {} mode",
