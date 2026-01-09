@@ -1,6 +1,6 @@
 use crate::{
     external_tool::registry::Registry,
-    manifest::{Manifest, dependency::Dependency, kv::KeyValue, package_type::PackageType},
+    manifest::{Manifest, kv::KeyValue, package_type::PackageType},
     storage::Storage,
 };
 
@@ -10,7 +10,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn load_from_manifest(mut manifest: Manifest, registry: &Registry) -> Result<Self, String> {
+    pub fn load_from_manifest(manifest: Manifest, registry: &Registry) -> Result<Self, String> {
         let mut open_list = manifest.dependencies().clone();
         let mut closed_list = vec![];
         let mut dependencies = vec![];
@@ -30,14 +30,6 @@ impl Package {
 
             closed_list.push(dependency.clone());
             dependencies.push(dep_manifest.clone());
-
-            if dep_manifest.is_tool() {
-                if manifest.tool().is_some() {
-                    return Err("Multiple tools specified in dependencies".to_string());
-                }
-
-                manifest.set_tool(dependency);
-            }
 
             for dep in dep_manifest.dependencies() {
                 if !closed_list.contains(&dep) {
@@ -60,10 +52,6 @@ impl Package {
         sources
     }
 
-    pub fn tool(&self) -> Option<Dependency> {
-        self.manifest.tool()
-    }
-
     pub fn includes(&self) -> Vec<String> {
         let mut includes = self.manifest.includes();
         for dep in &self.dependencies {
@@ -72,11 +60,8 @@ impl Package {
         includes
     }
 
-    pub fn pkg_type(&self) -> Result<PackageType, String> {
-        match &self.manifest {
-            Manifest::Package { type_, .. } => Ok(*type_),
-            Manifest::Tool { .. } => Err("The manifest is for a tool, not a package".to_string()),
-        }
+    pub fn pkg_type(&self) -> PackageType {
+        self.manifest.pkg_type()
     }
 
     pub fn name(&self) -> String {
@@ -84,12 +69,10 @@ impl Package {
     }
 
     pub fn options(&self) -> Vec<KeyValue> {
-        match &self.manifest {
-            Manifest::Package { dependencies, .. } => dependencies
-                .iter()
-                .flat_map(|dep| dep.options().to_vec())
-                .collect::<Vec<_>>(),
-            Manifest::Tool { .. } => vec![],
-        }
+        self.manifest
+            .dependencies()
+            .iter()
+            .flat_map(|dep| dep.options().to_vec())
+            .collect::<Vec<_>>()
     }
 }

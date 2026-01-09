@@ -1,47 +1,43 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
-/// Helper function to get the path to the tailor binary (tries release, then debug)
+/// Helper function to get the path to the tailor binary built by Cargo for tests.
 fn get_tailor_binary() -> PathBuf {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("target");
-    path.push("release");
-    path.push("tailor");
-
-    if !path.exists() {
-        path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("target");
-        path.push("debug");
-        path.push("tailor");
-    }
-
-    path
+    PathBuf::from(env!("CARGO_BIN_EXE_tailor"))
 }
 
-/// Setup: Creates and returns test directory path
-/// Teardown must be called manually after each test
-fn setup_test_dir(name: &str) -> PathBuf {
-    let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("test/{}", name));
-    cleanup_test_dir(&test_dir);
-    test_dir
+struct TestDir {
+    path: PathBuf,
 }
 
-/// Teardown: Removes test directory and all its contents
-fn cleanup_test_dir(path: &Path) {
-    if path.exists() {
-        fs::remove_dir_all(path).ok();
+impl Drop for TestDir {
+    fn drop(&mut self) {
+        if self.path.exists() {
+            fs::remove_dir_all(&self.path).ok();
+        }
     }
+}
+
+/// Setup: Creates and returns test directory path.
+/// Teardown is automatic via `Drop`, even if the test panics.
+fn setup_test_dir(name: &str) -> TestDir {
+    let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("tests/{}", name));
+    if test_dir.exists() {
+        fs::remove_dir_all(&test_dir).ok();
+    }
+    TestDir { path: test_dir }
 }
 
 #[test]
 fn test_new_binary_package() {
     let test_dir = setup_test_dir("hello");
+    let test_path = &test_dir.path;
 
     // Run: tailor new hello
     let output = Command::new(get_tailor_binary())
         .arg("new")
-        .arg(&test_dir)
+        .arg(test_path)
         .output()
         .expect("Failed to execute tailor");
 
@@ -60,27 +56,27 @@ fn test_new_binary_package() {
     );
 
     // Verify directory structure
-    assert!(test_dir.exists(), "Package directory was not created");
+    assert!(test_path.exists(), "Package directory was not created");
     assert!(
-        test_dir.join("src").exists(),
+        test_path.join("src").exists(),
         "src directory was not created"
     );
     assert!(
-        test_dir.join("include").exists(),
+        test_path.join("include").exists(),
         "include directory was not created"
     );
     assert!(
-        test_dir.join("src/main.c").exists(),
+        test_path.join("src/main.c").exists(),
         "src/main.c was not created"
     );
     assert!(
-        test_dir.join("Tailor.toml").exists(),
+        test_path.join("Tailor.toml").exists(),
         "Tailor.toml was not created"
     );
 
     // Verify main.c content matches template exactly
     let main_c_content =
-        fs::read_to_string(test_dir.join("src/main.c")).expect("Failed to read src/main.c");
+        fs::read_to_string(test_path.join("src/main.c")).expect("Failed to read src/main.c");
 
     let expected_main_c =
         "#include <stdio.h>\n\nint main() {\n  printf(\"Hello, World!\\n\");\n\n  return 0;\n}\n";
@@ -91,7 +87,7 @@ fn test_new_binary_package() {
 
     // Verify Tailor.toml content matches template exactly
     let manifest_content =
-        fs::read_to_string(test_dir.join("Tailor.toml")).expect("Failed to read Tailor.toml");
+        fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
     let expected_manifest =
         "name = \"hello\"\nversion = \"0.1.0\"\nedition = \"2026\"\n\n[dependencies]\n";
@@ -99,19 +95,18 @@ fn test_new_binary_package() {
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
     );
-
-    cleanup_test_dir(&test_dir);
 }
 
 #[test]
 fn test_new_binary_package_with_bin_flag() {
     let test_dir = setup_test_dir("hello_bin");
+    let test_path = &test_dir.path;
 
     // Run: tailor new --bin hello_bin
     let output = Command::new(get_tailor_binary())
         .arg("new")
         .arg("--bin")
-        .arg(&test_dir)
+        .arg(test_path)
         .output()
         .expect("Failed to execute tailor");
 
@@ -130,27 +125,27 @@ fn test_new_binary_package_with_bin_flag() {
     );
 
     // Verify directory structure (same as default binary package)
-    assert!(test_dir.exists(), "Package directory was not created");
+    assert!(test_path.exists(), "Package directory was not created");
     assert!(
-        test_dir.join("src").exists(),
+        test_path.join("src").exists(),
         "src directory was not created"
     );
     assert!(
-        test_dir.join("include").exists(),
+        test_path.join("include").exists(),
         "include directory was not created"
     );
     assert!(
-        test_dir.join("src/main.c").exists(),
+        test_path.join("src/main.c").exists(),
         "src/main.c was not created"
     );
     assert!(
-        test_dir.join("Tailor.toml").exists(),
+        test_path.join("Tailor.toml").exists(),
         "Tailor.toml was not created"
     );
 
     // Verify main.c content matches template exactly
     let main_c_content =
-        fs::read_to_string(test_dir.join("src/main.c")).expect("Failed to read src/main.c");
+        fs::read_to_string(test_path.join("src/main.c")).expect("Failed to read src/main.c");
 
     let expected_main_c =
         "#include <stdio.h>\n\nint main() {\n  printf(\"Hello, World!\\n\");\n\n  return 0;\n}\n";
@@ -161,7 +156,7 @@ fn test_new_binary_package_with_bin_flag() {
 
     // Verify Tailor.toml content matches template exactly
     let manifest_content =
-        fs::read_to_string(test_dir.join("Tailor.toml")).expect("Failed to read Tailor.toml");
+        fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
     let expected_manifest =
         "name = \"hello_bin\"\nversion = \"0.1.0\"\nedition = \"2026\"\n\n[dependencies]\n";
@@ -169,21 +164,20 @@ fn test_new_binary_package_with_bin_flag() {
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
     );
-
-    cleanup_test_dir(&test_dir);
 }
 
 #[test]
 fn test_new_binary_package_with_existing_folder() {
     let test_dir = setup_test_dir("hello_existing_bin");
+    let test_path = &test_dir.path;
 
     // Setup: Create the directory first
-    fs::create_dir_all(&test_dir).expect("Failed to create test directory");
+    fs::create_dir_all(test_path).expect("Failed to create test directory");
 
     // Run: tailor new hello_existing_bin (should fail)
     let output = Command::new(get_tailor_binary())
         .arg("new")
-        .arg(&test_dir)
+        .arg(test_path)
         .output()
         .expect("Failed to execute tailor");
 
@@ -201,19 +195,18 @@ fn test_new_binary_package_with_existing_folder() {
         "Error message should mention that destination already exists in stderr. Got stderr: {}",
         stderr
     );
-
-    cleanup_test_dir(&test_dir);
 }
 
 #[test]
 fn test_new_library_package() {
     let test_dir = setup_test_dir("mylib");
+    let test_path = &test_dir.path;
 
     // Run: tailor new --lib mylib
     let output = Command::new(get_tailor_binary())
         .arg("new")
         .arg("--lib")
-        .arg(&test_dir)
+        .arg(test_path)
         .output()
         .expect("Failed to execute tailor");
 
@@ -232,31 +225,31 @@ fn test_new_library_package() {
     );
 
     // Verify directory structure
-    assert!(test_dir.exists(), "Package directory was not created");
+    assert!(test_path.exists(), "Package directory was not created");
     assert!(
-        test_dir.join("src").exists(),
+        test_path.join("src").exists(),
         "src directory was not created"
     );
     assert!(
-        test_dir.join("include/mylib").exists(),
+        test_path.join("include/mylib").exists(),
         "include/mylib directory was not created"
     );
     assert!(
-        test_dir.join("src/mylib.c").exists(),
+        test_path.join("src/mylib.c").exists(),
         "src/mylib.c was not created"
     );
     assert!(
-        test_dir.join("include/mylib/mylib.h").exists(),
+        test_path.join("include/mylib/mylib.h").exists(),
         "include/mylib/mylib.h was not created"
     );
     assert!(
-        test_dir.join("Tailor.toml").exists(),
+        test_path.join("Tailor.toml").exists(),
         "Tailor.toml was not created"
     );
 
     // Verify library .c file content matches template exactly
     let lib_c_content =
-        fs::read_to_string(test_dir.join("src/mylib.c")).expect("Failed to read src/mylib.c");
+        fs::read_to_string(test_path.join("src/mylib.c")).expect("Failed to read src/mylib.c");
 
     let expected_lib_c = "#include \"mylib/mylib.h\"\n#include <stdio.h>\n\nvoid mylib() { printf(\"Hello from the mylib library!\\n\"); }\n";
     assert_eq!(
@@ -265,7 +258,7 @@ fn test_new_library_package() {
     );
 
     // Verify header file content matches template exactly
-    let lib_h_content = fs::read_to_string(test_dir.join("include/mylib/mylib.h"))
+    let lib_h_content = fs::read_to_string(test_path.join("include/mylib/mylib.h"))
         .expect("Failed to read include/mylib/mylib.h");
 
     let expected_lib_h =
@@ -277,29 +270,28 @@ fn test_new_library_package() {
 
     // Verify Tailor.toml content matches template exactly
     let manifest_content =
-        fs::read_to_string(test_dir.join("Tailor.toml")).expect("Failed to read Tailor.toml");
+        fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
     let expected_manifest = "name = \"mylib\"\nversion = \"0.1.0\"\nedition = \"2026\"\ntype = \"lib\"\n\n[dependencies]\n";
     assert_eq!(
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
     );
-
-    cleanup_test_dir(&test_dir);
 }
 
 #[test]
 fn test_new_library_package_with_existing_folder() {
     let test_dir = setup_test_dir("mylib_existing");
+    let test_path = &test_dir.path;
 
     // Setup: Create the directory first
-    fs::create_dir_all(&test_dir).expect("Failed to create test directory");
+    fs::create_dir_all(test_path).expect("Failed to create test directory");
 
     // Run: tailor new --lib mylib_existing (should fail)
     let output = Command::new(get_tailor_binary())
         .arg("new")
         .arg("--lib")
-        .arg(&test_dir)
+        .arg(test_path)
         .output()
         .expect("Failed to execute tailor");
 
@@ -317,6 +309,4 @@ fn test_new_library_package_with_existing_folder() {
         "Error message should mention that destination already exists in stderr. Got stderr: {}",
         stderr
     );
-
-    cleanup_test_dir(&test_dir);
 }

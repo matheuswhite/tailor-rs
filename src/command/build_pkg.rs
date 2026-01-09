@@ -1,7 +1,7 @@
 use crate::{
     absolute_path::AbsolutePath,
     command::Command,
-    external_tool::{cmake::CMake, custom_tool::CustomTool, registry::Registry},
+    external_tool::{cmake::CMake, registry::Registry},
     fmt::success,
     manifest::Manifest,
     mode::Mode,
@@ -71,7 +71,7 @@ impl Command for BuildPkg {
 
         let sources = pkg.sources();
         let includes = pkg.includes();
-        let pkg_type = pkg.pkg_type()?;
+        let pkg_type = pkg.pkg_type();
         let base_path = self.path.inner().join("build");
         let defines = pkg
             .options()
@@ -79,42 +79,31 @@ impl Command for BuildPkg {
             .map(|def| def.to_define())
             .collect();
 
-        if let Some(tool) = pkg.tool() {
-            CustomTool::build(
-                self.mode,
-                &self.path,
-                tool,
-                sources,
-                includes,
-                &self.registry,
-            )
-        } else {
-            let path = match self.mode {
-                Mode::Debug => base_path.join("debug"),
-                Mode::Release => base_path.join("release"),
-            };
-            std::fs::create_dir_all(&path)
-                .map_err(|e| format!("fail to create build directory: {}", e))?;
+        let path = match self.mode {
+            Mode::Debug => base_path.join("debug"),
+            Mode::Release => base_path.join("release"),
+        };
+        std::fs::create_dir_all(&path)
+            .map_err(|e| format!("fail to create build directory: {}", e))?;
 
-            if CMake::needs_recreate(path.clone().try_into()?, manifest_content.clone()) {
-                CMake::create_cmake_lists(
-                    pkg_type,
-                    sources.clone(),
-                    includes.clone(),
-                    path.clone().try_into()?,
-                )?;
-            }
-
-            CMake::write_tailor_lock(path.try_into()?, manifest_content)?;
-
-            println!(
-                "{} `{}` in {} mode",
-                success("Building"),
-                pkg.name(),
-                mode_name
-            );
-
-            CMake::build(self.mode, &self.path, defines)
+        if CMake::needs_recreate(path.clone().try_into()?, manifest_content.clone()) {
+            CMake::create_cmake_lists(
+                pkg_type,
+                sources.clone(),
+                includes.clone(),
+                path.clone().try_into()?,
+            )?;
         }
+
+        CMake::write_tailor_lock(path.try_into()?, manifest_content)?;
+
+        println!(
+            "{} `{}` in {} mode",
+            success("Building"),
+            pkg.name(),
+            mode_name
+        );
+
+        CMake::build(self.mode, &self.path, defines)
     }
 }

@@ -30,6 +30,7 @@ fn main() {
             let res = cmd.execute();
             if let Err(e) = res {
                 eprintln!("\n{}: {}", error(), e);
+                std::process::exit(1);
             }
             return;
         }

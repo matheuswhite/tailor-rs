@@ -122,9 +122,9 @@ impl CMake {
     }
 
     pub fn write_tailor_lock(path: AbsolutePath, content: String) -> Result<(), String> {
-        let dest = path.inner().join("build").join("Tailor.lock");
+        let dest = path.inner().join("Tailor.lock");
 
-        std::fs::write(dest, content).map_err(|e| format!("Failed to write Tailor.lock: {}", e))
+        std::fs::write(&dest, content).map_err(|e| format!("Failed to write {:?}: {}", dest, e))
     }
 
     pub fn needs_recreate(path: AbsolutePath, manifest: String) -> bool {

@@ -27,19 +27,4 @@ impl KeyValue {
             }
         }
     }
-
-    pub fn to_cli_option(&self) -> String {
-        match &self.value {
-            Value::String(s) => format!("--{}={}", self.key.replace("_", "-"), s),
-            Value::Integer(i) => format!("--{}={}", self.key.replace("_", "-"), i),
-            Value::Float(f) => format!("--{}={}", self.key.replace("_", "-"), f),
-            Value::Boolean(b) => {
-                if *b {
-                    format!("--{}", self.key.replace("_", "-"))
-                } else {
-                    "".to_string()
-                }
-            }
-        }
-    }
 }

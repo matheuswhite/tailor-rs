@@ -1,7 +1,7 @@
 use crate::{
     absolute_path::AbsolutePath,
     command::{Command, build_pkg::BuildPkg},
-    external_tool::{cmake::CMake, custom_tool::CustomTool, registry::Registry},
+    external_tool::{cmake::CMake, registry::Registry},
     fmt::success,
     manifest::{Manifest, package_type::PackageType},
     mode::Mode,
@@ -66,7 +66,7 @@ impl Command for RunPkg {
         let manifest = Manifest::from_file(&manifest_content, &self.path)?;
         let pkg = Package::load_from_manifest(manifest, &self.registry)?;
 
-        let pkg_type = pkg.pkg_type()?;
+        let pkg_type = pkg.pkg_type();
         let pkg_name = pkg.name();
 
         match pkg_type {
@@ -82,18 +82,14 @@ impl Command for RunPkg {
                     .ok_or("Failed to parse build arguments".to_string())?;
                 build.execute()?;
 
-                if let Some(tool) = pkg.tool() {
-                    CustomTool::run(self.mode, &self.path, tool, &self.registry)
-                } else {
-                    println!(
-                        "{} `{}` in {} mode",
-                        success("Running"),
-                        pkg_name,
-                        mode_name
-                    );
+                println!(
+                    "{} `{}` in {} mode",
+                    success("Running"),
+                    pkg_name,
+                    mode_name
+                );
 
-                    CMake::run(self.mode, &self.path)
-                }
+                CMake::run(self.mode, &self.path)
             }
         }
     }
