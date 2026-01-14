@@ -1,110 +1,146 @@
 # Tailor
 
-A C language package manager, inspired by Rust's cargo package manager
+Tailor is a C package manager inspired by Rust's Cargo.
 
 ## Goals
 
-This project is designed to provide an easy way to: create, build, run and
-manage external dependencies in C language projects. The following topics will
-explain the guidelines that will be followed through out the project development.
+Tailor aims to make it easy to create, build, clean, run, and manage external dependencies for C projects. These are the guidelines for the project:
 
-- **Don't reinventing the wheel**: We'll try to use (or be compatible to) the market
-standards instead of invent a new standard. For example, we'll use cmake to
-build the project, the Toml file format as the package manifest, and git as dependency hosting.
-- **Be retrocompatible**: New features are realsed only in new version of Tailor. Version in Tailor is called editions e each edition is retrocompatible with the previous one. Editions are compound by the year it was launched, followed by a dot with a sequence number. Examples of valid editions are: `2025.1`, `2025.2`, `2026.30`, and so on.
-- **Be compatible with existing CMake projects**: We'll integrate Tailor with the already consolidade CMake based projects, such as: Zephyr-RTOS, espressif-SDK, raspberry pi pico SDK, and so on. Our goal isn't change the struture of an existing project to turn this project compatible with Tailor. Instead, we'll design Tailor to adapt itself to work together with other CMake project structures.
-- **Be compatible with Kconfig**: Kconfig is the only consolidade way to create compile-time configuration for C. Even so, there isn't a simple way (outside the CMake build structure) to generate a header file with the configs setted from Kconfig. So, we'll design a standalone tool to parse Kconfig and generate header file with configs. So you won't need to use Tailor to use Kconfig in your project. There is also a plan to create new format to replace Kconfig and to be compatible with it.
+- **Don’t reinvent the wheel**: Prefer existing (or compatible) standards instead of inventing new ones. For example: TOML for the package manifest, Git for hosting dependencies, and `compile_commands.json` for IDE tooling.
+- **Stay backward-compatible**: Tailor versions are called **editions**. Each new edition adds features while remaining compatible with previous editions.
+	- Edition format: `YEAR.SEQUENCE` (for example: `2026.1`, `2026.2`, `2027.30`).
+- **Stay focused**: Tailor is a package manager. It’s designed to integrate with other tools, not replace them.
+- **Be extensible**: Starting in edition `2026.2`, Tailor will support extending core commands via custom scripts.
 
-## How to install
+## Installation
 
-Nowadays, the only way to install Tailor is to build it from source and copy the executable to some folder present in your `PATH`. To compile Tailor, use `cargo`.
+Currently, Tailor is installed by building from source and placing the executable in a directory on your `PATH`.
 
-## Package Types
+Build with Cargo:
 
-In Tailor, there are 2 package types: `bin` or `lib`. The `bin` package type is for build executable, or applications. It cannot be included as dependency for other packages. Meanwhile, the `lib` package type is for compile static library and to be included as dependency in other packages. Both `lib` packages and `bin` packages. There is also a plan to add a third type: `sdk`. This package type is going to allow custom CMake structure to integrate with Tailor.
+```sh
+cargo build --release
+```
 
-### Package Structure
+## Package types
 
-It's possible to choose what source files, and include folders, will be used in the package compilation. For default, all `.c` files inside the `src` folder (or the following pattern `src/*.c`) will be added. You can change what source files will be added for compilation, adding `src` key, at `Tailor.toml`, as a list of string. Each string could be a pattern of source files or a single source file. The path must be always relative to `Tailor.toml`. The same is true for include folders, adding the `include` key at `Tailor.toml`, as a list of string. For default, it's added `include/` folder for compilation. As `include/` is added as default, we ask to library developers use a folder inside the `include/` folder to holds its header files. With that, the chance to have ambiguities for include headers will be reduced.
+Tailor supports two package types:
 
-## How to use
+- `bin`: builds an executable (an application). `bin` packages cannot be used as dependencies.
+- `lib`: builds a static library that can be used as a dependency by other packages.
 
-### Creating a package
+## Package structure and manifest
 
-To create a new binary package for C language, with name `hello`, at `resource` folder, we'll use the following command:
+Tailor lets you choose which source files and include directories are used for compilation.
+
+- **Sources**: by default, all `.c` files under `src/` (equivalent to `src/*.c`) are included.
+	- Override this by setting the `src` key in `Tailor.toml` to a list of strings.
+	- Each entry may be a glob pattern or a specific file path.
+	- Paths are always relative to the `Tailor.toml` location.
+- **Include directories**: by default, `include/` is added to the include path.
+	- Override this by setting the `include` key in `Tailor.toml` to a list of strings.
+	- For library authors, prefer putting headers under a subfolder (for example `include/<libname>/...`) to reduce header name collisions.
+- **Defines/options**: you can pass preprocessor defines via `options`. Options can be set for the package itself and/or per dependency.
+
+## Usage
+
+### Create a package
+
+Create a new binary package named `hello` under `resource/`:
 
 ```sh
 tailor new resource/hello
 ```
 
-The package has created with the last path name: `hello`. For binary packages, it's created 2 files: `src/main.c` that prints a hello world message and the Tailor manifest (`Tailor.toml`) with package informations.
+The package name is taken from the last path segment (`hello`). For a binary package, Tailor creates:
 
-If you'd like to create a library package, you need to put `--lib` flag after `new`:
+- `src/main.c` (a Hello World program)
+- `Tailor.toml` (the manifest)
+
+Create a library package instead by passing `--lib`:
 
 ```sh
 tailor new --lib resource/hello
 ```
 
-For library package, is created two files for the library itself: `src/hello.c`, and `include/hello/hello.h`; and the Tailor manifest file: `Tailor.toml`.
+For a library package, Tailor creates:
 
-### Building the package
+- `src/hello.c`
+- `include/hello/hello.h`
+- `Tailor.toml`
 
-To build the project, we'll use the following command, if you are at the same folder of previous command:
+### Build a package
+
+From outside the package directory:
 
 ```sh
 tailor build resource/hello
 ```
 
-or, if you are inside the `resource/hello`, you can omit the last argument:
+Or from inside `resource/hello`:
 
 ```sh
 tailor build
 ```
 
-If the package is a library, then a static library will be produced, instead of an executable.
-
-For default, we'll build in debug mode, and all build files will be created inside the `build/debug` folder. To build in release mode, add `--release` after `build`:
+By default Tailor builds in debug mode and writes build artifacts to `build/debug/`. For release builds, add `--release`:
 
 ```sh
 tailor build --release resource/hello
 ```
 
-As it's known, we'll use CMake to build the project. So the `CMakeLists.txt` file will be created inside the `build/debug` (or `build/release` if it's in release mode). If any content inside the `Tailor.toml` file changes, so a new `CMakeLists.txt` file will be generated.
+Debug builds use `-Og`; release builds use `-Os`.
 
-### Running the package
+### Run a package
 
-To run the project, we'll use the same logic of build:
+Run follows the same path rules as build:
 
 ```sh
 tailor run resource/hello
 ```
 
-or, if you are inside the `resource/hello`:
+Or from inside `resource/hello`:
 
 ```sh
 tailor run
 ```
 
-Note that, as build, it's possible to run in release mode, adding `--release` flag:
+Run in release mode with `--release`:
 
 ```sh
 tailor run --release resource/hello
 ```
 
-The run command is the same as to execute the following command in terminal:
+Running is equivalent to executing the built binary directly:
 
 ```sh
-build/debug/hello
+build/debug/hello@0.1.0
 ```
 
-or in release mode:
+Or in release mode:
 
 ```sh
-build/release/hello
+build/release/hello@0.1.0
 ```
 
-The only difference is it'll build before run the compiled program. Note it's not possible to run library packages.
+The difference is that `tailor run` builds first if needed. Note: library packages cannot be run.
 
-## How to contribute
+### Clean a package
 
-Feels free to request features or to report a bug. To do that, create a issue in github. The issues are grouped in milestones. Each milestone is related with an Edition.
+From outside the package directory:
+
+```sh
+tailor clean resource/hello
+```
+
+Or from inside the package:
+
+```sh
+tailor clean
+```
+
+`clean` removes build output directories and reports how many files were removed and how much disk space was freed.
+
+## Contributing
+
+Feel free to request features or report bugs by opening a GitHub issue. Issues are grouped into milestones, and each milestone is tied to an edition.
