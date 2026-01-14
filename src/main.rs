@@ -10,6 +10,7 @@ mod mode;
 mod package;
 mod storage;
 
+use crate::command::clean_pkg::CleanPkg;
 use crate::command::{build_pkg::BuildPkg, new_pkg::NewPkg, run_pkg::RunPkg};
 use crate::config::Config;
 use crate::{command::Command, fmt::error};
@@ -22,6 +23,7 @@ fn main() {
         &mut NewPkg::default(),
         &mut BuildPkg::default(),
         &mut RunPkg::default(),
+        &mut CleanPkg::default(),
     ];
     let args = args().collect::<Vec<String>>();
 
@@ -47,4 +49,5 @@ fn main() {
     println!("  new         Create a new package");
     println!("  build       Build the package");
     println!("  run         Run the package");
+    println!("  clean       Clean the build artifacts");
 }

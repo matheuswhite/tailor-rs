@@ -1,13 +1,13 @@
 use crate::{
     absolute_path::AbsolutePath,
     command::Command,
-    external_tool::{cmake::CMake, registry::Registry},
+    external_tool::{compiler::Compiler, registry::Registry},
     fmt::success,
     manifest::Manifest,
     mode::Mode,
     package::Package,
 };
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Instant};
 
 #[derive(Default)]
 pub struct BuildPkg {
@@ -62,16 +62,14 @@ impl Command for BuildPkg {
     }
 
     fn execute(&self) -> Result<(), String> {
-        let mode_name = self.mode.to_string();
-
+        let start = Instant::now();
         let manifest_content = std::fs::read_to_string(self.path.inner().join("Tailor.toml"))
             .map_err(|_| "fail to read Tailor.toml".to_string())?;
         let manifest = Manifest::from_file(&manifest_content, &self.path)?;
         let pkg = Package::load_from_manifest(manifest, &self.registry)?;
 
-        let sources = pkg.sources();
-        let includes = pkg.includes();
-        let pkg_type = pkg.pkg_type();
+        let manifest = pkg.manifest();
+        let pkg_type = manifest.pkg_type();
         let base_path = self.path.inner().join("build");
         let defines = pkg
             .options()
@@ -86,24 +84,17 @@ impl Command for BuildPkg {
         std::fs::create_dir_all(&path)
             .map_err(|e| format!("fail to create build directory: {}", e))?;
 
-        if CMake::needs_recreate(path.clone().try_into()?, manifest_content.clone()) {
-            CMake::create_cmake_lists(
-                pkg_type,
-                sources.clone(),
-                includes.clone(),
-                path.clone().try_into()?,
-            )?;
-        }
+        let compiler = Compiler::new(manifest.compiler(), manifest.full_name());
 
-        CMake::write_tailor_lock(path.try_into()?, manifest_content)?;
+        compiler.build(self.mode, &path, pkg, pkg_type, defines)?;
 
         println!(
-            "{} `{}` in {} mode",
-            success("Building"),
-            pkg.name(),
-            mode_name
+            "{} `{}` profile target in {:.2}s",
+            success("Finished"),
+            self.mode,
+            start.elapsed().as_secs_f32()
         );
 
-        CMake::build(self.mode, &self.path, defines)
+        Ok(())
     }
 }

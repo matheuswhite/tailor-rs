@@ -1,7 +1,7 @@
 use crate::{
     absolute_path::AbsolutePath,
     command::{Command, build_pkg::BuildPkg},
-    external_tool::{cmake::CMake, registry::Registry},
+    external_tool::registry::Registry,
     fmt::success,
     manifest::{Manifest, package_type::PackageType},
     mode::Mode,
@@ -66,8 +66,8 @@ impl Command for RunPkg {
         let manifest = Manifest::from_file(&manifest_content, &self.path)?;
         let pkg = Package::load_from_manifest(manifest, &self.registry)?;
 
-        let pkg_type = pkg.pkg_type();
-        let pkg_name = pkg.name();
+        let pkg_type = pkg.manifest().pkg_type();
+        let pkg_name = pkg.manifest().full_name();
 
         match pkg_type {
             PackageType::Library => Err("It's not possible run a library package".to_string()),
@@ -82,14 +82,25 @@ impl Command for RunPkg {
                     .ok_or("Failed to parse build arguments".to_string())?;
                 build.execute()?;
 
+                let executable_path = self
+                    .path
+                    .inner()
+                    .join("build")
+                    .join(mode_name)
+                    .join(&pkg_name);
                 println!(
-                    "{} `{}` in {} mode",
+                    "{} `{}`",
                     success("Running"),
-                    pkg_name,
-                    mode_name
+                    executable_path.to_string_lossy()
                 );
+                let status = std::process::Command::new(executable_path)
+                    .status()
+                    .map_err(|e| format!("failed to execute the package: {}", e))?;
+                if !status.success() {
+                    return Err("execution failed".to_string());
+                }
 
-                CMake::run(self.mode, &self.path)
+                Ok(())
             }
         }
     }

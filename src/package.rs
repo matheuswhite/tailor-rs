@@ -1,6 +1,6 @@
 use crate::{
     external_tool::registry::Registry,
-    manifest::{Manifest, kv::KeyValue, package_type::PackageType},
+    manifest::{Manifest, kv::KeyValue, pattern_path::PatternPath},
     storage::Storage,
 };
 
@@ -10,7 +10,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn load_from_manifest(manifest: Manifest, registry: &Registry) -> Result<Self, String> {
+    pub fn load_from_manifest(mut manifest: Manifest, registry: &Registry) -> Result<Self, String> {
         let mut open_list = manifest.dependencies().clone();
         let mut closed_list = vec![];
         let mut dependencies = vec![];
@@ -24,7 +24,7 @@ impl Package {
             if !dep_manifest.is_library() {
                 return Err(format!(
                     "Dependency {} is not a library package",
-                    dep_manifest.name()
+                    dep_manifest.full_name()
                 ));
             }
 
@@ -38,34 +38,28 @@ impl Package {
             }
         }
 
+        manifest.set_includes(Self::resolve_includes(&manifest));
+        for dep in dependencies.iter_mut() {
+            dep.set_includes(Self::resolve_includes(dep));
+        }
+
         Ok(Self {
             manifest,
             dependencies,
         })
     }
 
-    pub fn sources(&self) -> Vec<String> {
-        let mut sources = self.manifest.sources();
-        for dep in &self.dependencies {
-            sources.extend(dep.sources());
-        }
-        sources
-    }
+    fn resolve_includes(manifest: &Manifest) -> Vec<PatternPath> {
+        let mut includes = manifest.includes().to_vec();
 
-    pub fn includes(&self) -> Vec<String> {
-        let mut includes = self.manifest.includes();
-        for dep in &self.dependencies {
-            includes.extend(dep.includes());
+        for dependency in manifest.dependencies() {
+            let dep_manifest = Storage::download(dependency.clone(), &Registry::default())
+                .expect("Failed to download dependency manifest");
+
+            includes.extend(dep_manifest.includes().to_vec());
         }
+
         includes
-    }
-
-    pub fn pkg_type(&self) -> PackageType {
-        self.manifest.pkg_type()
-    }
-
-    pub fn name(&self) -> String {
-        self.manifest.name()
     }
 
     pub fn options(&self) -> Vec<KeyValue> {
@@ -74,5 +68,13 @@ impl Package {
             .iter()
             .flat_map(|dep| dep.options().to_vec())
             .collect::<Vec<_>>()
+    }
+
+    pub fn dependencies(&self) -> &[Manifest] {
+        &self.dependencies
+    }
+
+    pub fn manifest(&self) -> &Manifest {
+        &self.manifest
     }
 }

@@ -15,7 +15,7 @@ pub enum Value {
 impl KeyValue {
     pub fn to_define(&self) -> String {
         match &self.value {
-            Value::String(s) => format!("-D{}=\"{}\"", self.key.to_uppercase(), s),
+            Value::String(s) => format!("-D{}=\"\\\"{}\\\"\"", self.key.to_uppercase(), s),
             Value::Integer(i) => format!("-D{}={}", self.key.to_uppercase(), i),
             Value::Float(f) => format!("-D{}={}", self.key.to_uppercase(), f),
             Value::Boolean(b) => {
