@@ -90,7 +90,7 @@ fn test_new_binary_package() {
         fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
     let expected_manifest =
-        "name = \"hello\"\nversion = \"0.1.0\"\nedition = \"2026\"\n\n[dependencies]\n";
+        "name = \"hello\"\nversion = \"0.1.0\"\nedition = \"2026.1\"\n\n[dependencies]\n";
     assert_eq!(
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
@@ -159,7 +159,7 @@ fn test_new_binary_package_with_bin_flag() {
         fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
     let expected_manifest =
-        "name = \"hello_bin\"\nversion = \"0.1.0\"\nedition = \"2026\"\n\n[dependencies]\n";
+        "name = \"hello_bin\"\nversion = \"0.1.0\"\nedition = \"2026.1\"\n\n[dependencies]\n";
     assert_eq!(
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
@@ -272,7 +272,7 @@ fn test_new_library_package() {
     let manifest_content =
         fs::read_to_string(test_path.join("Tailor.toml")).expect("Failed to read Tailor.toml");
 
-    let expected_manifest = "name = \"mylib\"\nversion = \"0.1.0\"\nedition = \"2026\"\ntype = \"lib\"\n\n[dependencies]\n";
+    let expected_manifest = "name = \"mylib\"\nversion = \"0.1.0\"\nedition = \"2026.1\"\ntype = \"lib\"\n\n[dependencies]\n";
     assert_eq!(
         manifest_content, expected_manifest,
         "Tailor.toml content should match template exactly"
