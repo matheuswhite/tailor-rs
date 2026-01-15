@@ -1,7 +1,5 @@
+use crate::{command::Command, manifest::package_type::PackageType};
 use std::{path::PathBuf, str::FromStr};
-
-use crate::command::Command;
-use crate::package::PackageType;
 
 #[derive(Default)]
 pub struct NewPkg {
@@ -69,19 +67,12 @@ mod bin {
 
     use crate::fmt::success;
 
-    const MAIN_C: &str = include_str!("../template/main.c");
-    const TAILOR_MANIFEST: &str = include_str!("../template/bin/Tailor.toml");
+    const MAIN_C: &str = include_str!("../../template/main.c");
+    const TAILOR_MANIFEST: &str = include_str!("../../template/bin/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
-        let abs_path = Path::new(".")
-            .canonicalize()
-            .map_err(|_| "fail to get absolute path")?
-            .join(path);
-        if abs_path.exists() {
-            return Err(format!(
-                "destination `{}` already exists.",
-                abs_path.display()
-            ));
+        if path.exists() {
+            return Err(format!("destination `{}` already exists.", path.display()));
         }
 
         std::fs::create_dir_all(path.join("src")).map_err(|_| "fail to create src".to_string())?;
@@ -112,20 +103,13 @@ mod lib {
 
     use crate::fmt::success;
 
-    const LIB_C: &str = include_str!("../template/lib.c");
-    const LIB_H: &str = include_str!("../template/lib.h");
-    const TAILOR_MANIFEST: &str = include_str!("../template/lib/Tailor.toml");
+    const LIB_C: &str = include_str!("../../template/lib.c");
+    const LIB_H: &str = include_str!("../../template/lib.h");
+    const TAILOR_MANIFEST: &str = include_str!("../../template/lib/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
-        let abs_path = Path::new(".")
-            .canonicalize()
-            .map_err(|_| "fail to get absolute path")?
-            .join(path);
-        if abs_path.exists() {
-            return Err(format!(
-                "destination `{}` already exists.",
-                abs_path.display()
-            ));
+        if path.exists() {
+            return Err(format!("destination `{}` already exists.", path.display()));
         }
 
         std::fs::create_dir_all(path.join("src")).map_err(|_| "fail to create src".to_string())?;

@@ -1,26 +1,32 @@
 #![deny(warnings)]
 
-mod build_pkg;
-mod cmake;
+mod absolute_path;
 mod command;
-mod dependency;
-mod dependency_manager;
+mod config;
+mod external_tool;
 mod fmt;
-mod git;
+mod manifest;
 mod mode;
-mod new_pkg;
 mod package;
-mod run_pkg;
+mod storage;
 
+use crate::command::clean_pkg::CleanPkg;
+use crate::command::{build_pkg::BuildPkg, new_pkg::NewPkg, run_pkg::RunPkg};
+use crate::config::Config;
+use crate::{command::Command, fmt::error};
 use std::env::args;
 
-use crate::{build_pkg::BuildPkg, command::Command, fmt::error, new_pkg::NewPkg, run_pkg::RunPkg};
-
 fn main() {
+    if let Err(err) = Config::create_default_config() {
+        eprintln!("\n{}: {}", error(), err);
+        return;
+    };
+
     let commands: &mut [&mut dyn Command] = &mut [
         &mut NewPkg::default(),
         &mut BuildPkg::default(),
         &mut RunPkg::default(),
+        &mut CleanPkg::default(),
     ];
     let args = args().collect::<Vec<String>>();
 
@@ -29,6 +35,7 @@ fn main() {
             let res = cmd.execute();
             if let Err(e) = res {
                 eprintln!("\n{}: {}", error(), e);
+                std::process::exit(1);
             }
             return;
         }
@@ -45,4 +52,5 @@ fn main() {
     println!("  new         Create a new package");
     println!("  build       Build the package");
     println!("  run         Run the package");
+    println!("  clean       Clean the build artifacts");
 }

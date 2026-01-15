@@ -1,6 +1,6 @@
 name = "$pkg_name"
 version = "0.1.0"
-edition = "2025.1"
+edition = "2026.1"
 type = "lib"
 
 [dependencies]

@@ -11,29 +11,53 @@ pub fn error() -> String {
 }
 
 #[allow(unused)]
-pub fn warning() -> String {
-    "\x1B[33;1mwarning\x1B[0m".to_string()
-}
-
 pub fn info(title: &str) -> String {
     let title_len = title.len();
     let spaces = " ".repeat(12 - title_len);
     format!("{}\x1B[36;1m{}\x1B[0m", spaces, title)
 }
 
-pub struct Progress;
+pub struct Progress {
+    title: String,
+    total: usize,
+    current: usize,
+}
 
 impl Progress {
-    pub fn new(title: &str, message: String) -> Self {
-        print!("{} {} ...", info(title), message);
+    pub fn new(title: &str, total: usize) -> Self {
+        print!("{} [>{}] 0/{}", info(title), " ".repeat(25), total);
         let _ = std::io::stdout().flush();
 
-        Self
+        Self {
+            title: title.to_string(),
+            total,
+            current: 0,
+        }
     }
 
-    pub fn finish(self, title: &str, message: String) {
-        print!("\r{}\r", " ".repeat(100));
+    fn clear_line() {
+        print!("\r\x1B[K");
+    }
+
+    pub fn next(&mut self, message: &str) {
+        Self::clear_line();
+        println!("{} ", message);
+
+        self.current += 1;
+        let percentage = self.current as f64 / self.total as f64;
+        let filled_length = (percentage * 25.0).round() as usize;
+        let bar = format!(
+            "[{}>{}] {}/{}",
+            "=".repeat(filled_length),
+            " ".repeat(25 - filled_length),
+            self.current,
+            self.total
+        );
+        print!("\r{} {}", info(&self.title), bar);
         let _ = std::io::stdout().flush();
-        println!("{} {}", success(title), message);
+    }
+
+    pub fn finish(self) {
+        Self::clear_line();
     }
 }
