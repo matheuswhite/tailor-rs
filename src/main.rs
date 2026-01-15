@@ -17,7 +17,10 @@ use crate::{command::Command, fmt::error};
 use std::env::args;
 
 fn main() {
-    Config::create_default_config();
+    if let Err(err) = Config::create_default_config() {
+        eprintln!("\n{}: {}", error(), err);
+        return;
+    };
 
     let commands: &mut [&mut dyn Command] = &mut [
         &mut NewPkg::default(),

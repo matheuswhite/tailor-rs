@@ -26,7 +26,7 @@ impl Registry {
 impl Default for Registry {
     fn default() -> Self {
         Self {
-            config: Config::load(),
+            config: Config::load().expect("Failed to load config"),
         }
     }
 }

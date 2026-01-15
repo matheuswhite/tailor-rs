@@ -12,7 +12,7 @@ impl TryFrom<&str> for Mode {
         match value {
             "--debug" => Ok(Mode::Debug),
             "--release" => Ok(Mode::Release),
-            _ => Err(format!("Invalid mode: {}", value)),
+            _ => Err(format!("invalid mode: {}", value)),
         }
     }
 }

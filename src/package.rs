@@ -38,9 +38,9 @@ impl Package {
             }
         }
 
-        manifest.set_includes(Self::resolve_includes(&manifest));
+        manifest.set_includes(Self::resolve_includes(&manifest)?);
         for dep in dependencies.iter_mut() {
-            dep.set_includes(Self::resolve_includes(dep));
+            dep.set_includes(Self::resolve_includes(dep)?);
         }
 
         Ok(Self {
@@ -49,17 +49,16 @@ impl Package {
         })
     }
 
-    fn resolve_includes(manifest: &Manifest) -> Vec<PatternPath> {
+    fn resolve_includes(manifest: &Manifest) -> Result<Vec<PatternPath>, String> {
         let mut includes = manifest.includes().to_vec();
 
         for dependency in manifest.dependencies() {
-            let dep_manifest = Storage::download(dependency.clone(), &Registry::default())
-                .expect("Failed to download dependency manifest");
+            let dep_manifest = Storage::download(dependency.clone(), &Registry::default())?;
 
             includes.extend(dep_manifest.includes().to_vec());
         }
 
-        includes
+        Ok(includes)
     }
 
     pub fn options(&self) -> Vec<KeyValue> {

@@ -12,11 +12,11 @@ pub struct Storage;
 impl Storage {
     fn storage_dir() -> Result<AbsolutePath, String> {
         home_dir()
-            .expect("fail to get home directory")
+            .ok_or_else(|| "Failed to get home directory".to_string())?
             .join(".tailor")
             .join("packages")
             .try_into()
-            .map_err(|err| format!("fail to get storage directory: {}", err))
+            .map_err(|err| format!("Failed to get storage directory: {}", err))
     }
 
     pub fn storage_name(dependency: &Dependency) -> String {
@@ -25,7 +25,7 @@ impl Storage {
                 format!("{}@{}", name, version)
             }
             Dependency::Git { name, revision, .. } => {
-                format!("{}@{}", name, revision.clone())
+                format!("{}@{}", name, revision)
             }
             Dependency::Local { name, .. } => format!("{}@local", name),
         }
@@ -59,13 +59,13 @@ impl Storage {
         let checksum_hex = hex::encode(checksum.0);
 
         std::fs::write(path.inner().join("Tailor.sha256"), checksum_hex)
-            .map_err(|_| "fail to write checksum file".to_string())
+            .map_err(|_| "Failed to write checksum file".to_string())
     }
 
     fn load_manifest(storage_name: &AbsolutePath) -> Result<Manifest, String> {
         let manifest_path = storage_name.inner().join("Tailor.toml");
         let manifest_content = std::fs::read_to_string(manifest_path)
-            .map_err(|_| "fail to read manifest from storage".to_string())?;
+            .map_err(|_| "Failed to read manifest from storage".to_string())?;
         let manifest = Manifest::from_file(&manifest_content, storage_name)?;
 
         Ok(manifest)
@@ -82,7 +82,7 @@ impl Storage {
 
         if exists && !integrity {
             std::fs::remove_dir_all(storage_name.inner())
-                .map_err(|_| "fail to remove corrupted dependency storage".to_string())?;
+                .map_err(|_| "Failed to remove corrupted dependency storage".to_string())?;
         }
 
         let manifest = match dependency {
@@ -100,10 +100,10 @@ impl Storage {
             }
             Dependency::Local { path, .. } => {
                 std::fs::create_dir_all(storage_name.inner())
-                    .map_err(|_| "fail to create local dependency storage".to_string())?;
+                    .map_err(|_| "Failed to create local dependency storage".to_string())?;
                 copy_dir_all(path.inner(), storage_name.inner()).map_err(|err| {
                     format!(
-                        "fail to copy local dependency {} -> {}: {}",
+                        "Failed to copy local dependency {} -> {}: {}",
                         path.inner().display(),
                         storage_name.inner().display(),
                         err
@@ -120,23 +120,40 @@ impl Storage {
     }
 }
 
-fn copy_dir_all<P>(src: P, dst: P) -> std::io::Result<()>
+fn copy_dir_all<P, Q>(src: P, dst: Q) -> std::io::Result<()>
 where
     P: AsRef<Path>,
+    Q: AsRef<Path>,
 {
-    std::fs::create_dir_all(&dst)?; // Ensure the destination directory exists
+    std::fs::create_dir_all(&dst)?;
 
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
-        let ty = entry.file_type()?;
+        let file_type = entry.file_type()?;
+
+        // Safety: never follow symlinks when copying dependencies into storage.
+        // Symlinks can lead to directory traversal or infinite loops.
+        if file_type.is_symlink() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Refusing to copy symlink: {}", entry.path().display()),
+            ));
+        }
+
         let dest_path = dst.as_ref().join(entry.file_name());
 
-        if ty.is_dir() {
-            // Recursively call the function for subdirectories
-            copy_dir_all(entry.path(), dest_path)?;
-        } else {
-            // Copy the file
+        if file_type.is_dir() {
+            copy_dir_all(entry.path(), &dest_path)?;
+        } else if file_type.is_file() {
             std::fs::copy(entry.path(), dest_path)?;
+        } else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "Refusing to copy non-file entry: {}",
+                    entry.path().display()
+                ),
+            ));
         }
     }
 

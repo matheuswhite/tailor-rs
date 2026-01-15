@@ -2,7 +2,7 @@
 
 ## Instructions
 
-For each test, create a setup and teardown. On teardown, all created files must be deleted. You need to test the program as a blackbox, using the same commands and actions that a user would use. If the program create some file, you need to check the exact string, if the program calls another program, then these files doesn't need comparations.
+For each test, create a setup and teardown. On teardown, all created files must be deleted. You need to test the program as a blackbox, using the same commands and actions that a user would use. If the program creates some file, you need to check the exact string, if the program calls another program, then these files don't need comparisons.
 
 ## Test Cases
 

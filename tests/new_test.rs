@@ -22,7 +22,9 @@ impl Drop for TestDir {
 /// Setup: Creates and returns test directory path.
 /// Teardown is automatic via `Drop`, even if the test panics.
 fn setup_test_dir(name: &str) -> TestDir {
-    let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("tests/{}", name));
+    let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join(name);
     if test_dir.exists() {
         fs::remove_dir_all(&test_dir).ok();
     }

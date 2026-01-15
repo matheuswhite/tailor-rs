@@ -39,9 +39,16 @@ impl Checksum {
 
                 let rel_path = path
                     .strip_prefix(root.inner())
-                    .unwrap()
+                    .map_err(|err| {
+                        format!(
+                            "Failed to strip prefix '{}' from path '{}': {}",
+                            root.inner().display(),
+                            path.display(),
+                            err
+                        )
+                    })?
                     .to_string_lossy()
-                    .replace('\\', "/"); // normaliza Windows → Unix
+                    .replace('\\', "/"); // normalize Windows → Unix
 
                 let hash =
                     Self::from_file(&path.try_into().map_err(|err| {
@@ -51,7 +58,7 @@ impl Checksum {
             }
         }
 
-        // Ordem determinística
+        // Deterministic order
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 
         Ok(entries)

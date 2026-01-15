@@ -20,11 +20,14 @@ impl Compiler {
         }
     }
 
-    fn get_object_path(source: &str, build_path: &Path) -> String {
+    fn get_object_path(source: &str, build_path: &Path) -> Result<String, String> {
         let source_path = Path::new(source);
-        let file_stem = source_path.file_stem().unwrap().to_string_lossy();
+        let file_stem = source_path
+            .file_stem()
+            .ok_or_else(|| "invalid source file".to_string())?
+            .to_string_lossy();
         let object_path = build_path.join(format!("{}.o", file_stem));
-        object_path.to_string_lossy().to_string()
+        Ok(object_path.to_string_lossy().to_string())
     }
 
     pub fn build(
@@ -51,7 +54,7 @@ impl Compiler {
             );
 
             for source in dependency.sources() {
-                let object_path = Self::get_object_path(&source, build_path);
+                let object_path = Self::get_object_path(&source, build_path)?;
 
                 object_list.push(object_path.clone());
 
@@ -128,7 +131,7 @@ impl Compiler {
                 self.compiler,
                 object_list.join(" "),
                 build_path
-                    .join(format!("l{}.so", self.pkg_full_name))
+                    .join(format!("lib{}.so", self.pkg_full_name))
                     .to_string_lossy()
             ),
         };

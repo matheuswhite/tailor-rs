@@ -99,7 +99,7 @@ impl Manifest {
 
         let name = Self::parse_name(&toml_table)?;
         let version = Self::parse_version(&toml_table)?;
-        Edition::parse_edition(&toml_table)
+        let _edition = Edition::parse_edition(&toml_table)
             .map_err(|e| format!("Failed to parse edition: {}", e))?;
 
         let type_ = toml_table
@@ -123,8 +123,10 @@ impl Manifest {
             version,
             type_: if type_ == "bin" {
                 PackageType::Binary
-            } else {
+            } else if type_ == "lib" {
                 PackageType::Library
+            } else {
+                return Err(format!("Unknown package type: {}", type_));
             },
             dependencies,
             sources,

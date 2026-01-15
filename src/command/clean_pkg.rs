@@ -1,5 +1,5 @@
 use crate::{absolute_path::AbsolutePath, command::Command, fmt::success, manifest::Manifest};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Default)]
 pub struct CleanPkg {
@@ -7,7 +7,7 @@ pub struct CleanPkg {
 }
 
 impl CleanPkg {
-    fn dir_size(path: &PathBuf) -> u64 {
+    fn dir_size(path: &Path) -> u64 {
         let mut size = 0;
 
         let Ok(entries) = std::fs::read_dir(path) else {
@@ -28,7 +28,7 @@ impl CleanPkg {
         size
     }
 
-    fn count_dir_recursively(path: &PathBuf) -> u64 {
+    fn count_dir_recursively(path: &Path) -> u64 {
         let mut count = 0;
 
         let Ok(entries) = std::fs::read_dir(path) else {
