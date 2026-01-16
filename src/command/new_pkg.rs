@@ -9,17 +9,22 @@ pub struct NewPkg {
 }
 
 impl Command for NewPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()>
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
     where
         Self: Sized,
     {
+        if args.is_empty() || args[0] != "new" {
+            return Ok(false);
+        }
+
         match args.len() {
+            0 | 1 => Err("Too few arguments for new command".to_string()),
             2 => {
                 if args[0] != "new" {
-                    return None;
+                    return Ok(false);
                 }
 
-                self.path = PathBuf::from_str(&args[1]).ok()?;
+                self.path = PathBuf::from_str(&args[1]).map_err(|_| "invalid path".to_string())?;
                 self.name = self
                     .path
                     .file_name()
@@ -27,20 +32,20 @@ impl Command for NewPkg {
                     .map(String::from)
                     .unwrap_or_default();
 
-                Some(())
+                Ok(true)
             }
             3 => {
                 if args[0] != "new" {
-                    return None;
+                    return Ok(false);
                 }
 
                 match args[1].as_str() {
                     "--bin" => self.pkg_type = PackageType::Binary,
                     "--lib" => self.pkg_type = PackageType::Library,
-                    _ => return None,
+                    _ => return Ok(false),
                 }
 
-                self.path = PathBuf::from_str(&args[2]).ok()?;
+                self.path = PathBuf::from_str(&args[2]).map_err(|_| "invalid path".to_string())?;
                 self.name = self
                     .path
                     .file_name()
@@ -48,9 +53,9 @@ impl Command for NewPkg {
                     .map(String::from)
                     .unwrap_or_default();
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err("Too many arguments for new command".to_string()),
         }
     }
 

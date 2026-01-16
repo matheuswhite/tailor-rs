@@ -67,23 +67,25 @@ impl CleanPkg {
 }
 
 impl Command for CleanPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()> {
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
         if args.is_empty() || args[0] != "clean" {
-            return None;
+            return Ok(false);
         }
 
         match args.len() {
             1 => {
-                self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                self.path = std::env::current_dir()
+                    .map_err(|err| err.to_string())?
+                    .try_into()?;
 
-                Some(())
+                Ok(true)
             }
             2 => {
-                self.path = PathBuf::from(&args[1]).try_into().ok()?;
+                self.path = PathBuf::from(&args[1]).try_into()?;
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err("Too many arguments for clean command".to_string()),
         }
     }
 

@@ -30,17 +30,31 @@ fn main() {
     ];
     let args = args().collect::<Vec<String>>();
 
+    if args.contains(&"--help".to_owned()) || args.contains(&"-h".to_owned()) {
+        help();
+        return;
+    }
+
     for cmd in commands {
-        if cmd.parse_args(&args[1..]).is_some() {
-            let res = cmd.execute();
-            if let Err(e) = res {
-                eprintln!("\n{}: {}", error(), e);
-                std::process::exit(1);
+        match cmd.parse_args(&args[1..]) {
+            Ok(false) => continue,
+            Ok(true) => {
+                cmd.execute().unwrap_or_else(error_handling);
+                return;
             }
-            return;
+            Err(err) => error_handling(err),
         }
     }
 
+    help();
+}
+
+fn error_handling(err: String) {
+    eprintln!("\n{}: {}", error(), err);
+    std::process::exit(1);
+}
+
+fn help() {
     println!("C language package manager\n");
     println!("Usage: tailor [COMMAND] [OPTIONS] <path>\n");
     println!("Options:");
