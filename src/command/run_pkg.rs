@@ -17,44 +17,52 @@ pub struct RunPkg {
 }
 
 impl Command for RunPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()> {
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
         if args.is_empty() || args[0] != "run" {
-            return None;
+            return Ok(false);
         }
 
         match args.len() {
             1 => {
                 self.mode = Mode::Debug;
-                self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                self.path = std::env::current_dir()
+                    .map_err(|err| err.to_string())?
+                    .try_into()?;
 
-                Some(())
+                Ok(true)
             }
             2 => {
                 match args[1].as_str().try_into() {
                     Ok(mode) => {
                         self.mode = mode;
-                        self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                        self.path = std::env::current_dir()
+                            .map_err(|err| err.to_string())?
+                            .try_into()?;
                     }
                     Err(_) => {
                         self.mode = Mode::Debug;
-                        self.path = PathBuf::from(&args[1]).try_into().ok()?;
+                        self.path = PathBuf::from(&args[1])
+                            .try_into()
+                            .map_err(|_| "invalid path".to_string())?;
                     }
                 }
 
-                Some(())
+                Ok(true)
             }
             3 => {
                 let mode = match args[1].as_str().try_into() {
                     Ok(mode) => mode,
-                    Err(_) => return None,
+                    Err(_) => return Err("invalid mode".to_string()),
                 };
 
                 self.mode = mode;
-                self.path = PathBuf::from(&args[2]).try_into().ok()?;
+                self.path = PathBuf::from(&args[2])
+                    .try_into()
+                    .map_err(|_| "invalid path".to_string())?;
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err("invalid arguments".to_string()),
         }
     }
 
@@ -79,7 +87,7 @@ impl Command for RunPkg {
                         format!("--{}", mode_name),
                         self.path.inner().to_string_lossy().to_string(),
                     ])
-                    .ok_or("Failed to parse build arguments".to_string())?;
+                    .map_err(|_| "Failed to parse build arguments".to_string())?;
                 build.execute()?;
 
                 let executable_path = self
