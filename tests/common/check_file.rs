@@ -13,7 +13,7 @@ impl CheckFile {
         );
 
         let content = std::fs::read_to_string(&self.path)
-            .expect(&format!("Failed to read file {:?}", self.path));
+            .unwrap_or_else(|_| panic!("Failed to read file {:?}", self.path));
 
         assert_eq!(
             content, expected,

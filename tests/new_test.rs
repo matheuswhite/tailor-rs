@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use crate::common::{
     check_dir::CheckDir,
     tailor_user::{CheckOutput, TailorUser},
