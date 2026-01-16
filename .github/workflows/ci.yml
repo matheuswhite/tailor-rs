@@ -1,4 +1,4 @@
-name: Cargo Build & Test
+name: CI
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   build_and_test:
-    name: ${{ matrix.os }} / ${{ matrix.toolchain }}
+    name: ${{ matrix.os }} / stable
     runs-on: ${{ matrix.os }}
     needs: lint
     strategy:
@@ -34,15 +34,11 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-        toolchain:
-          - stable
-          - beta
-          - nightly
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust (${{ matrix.toolchain }})
+      - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.toolchain }}
+          toolchain: stable
       - run: cargo build --release --verbose
       - run: cargo test --release --verbose -- --test-threads=1
