@@ -5,7 +5,7 @@ use crate::{
     mode::Mode,
     package::Package,
 };
-use std::path::Path;
+use std::{path::Path, process::Command};
 
 pub struct Compiler {
     compiler: String,
@@ -95,11 +95,13 @@ impl Compiler {
                     CompileCommandEntry::new(source_dir.to_owned(), arguments, source_file);
                 compile_command_entries.push(compile_command_entry);
 
-                let status = std::process::Command::new("sh")
+                let status = Command::new("sh")
                     .arg("-c")
-                    .arg(compile_cmd)
+                    .arg(&compile_cmd)
                     .status()
-                    .map_err(|e| format!("failed to execute compile command: {}", e))?;
+                    .map_err(|e| {
+                        format!("failed to execute compile command `{}`: {}", compile_cmd, e)
+                    })?;
                 if !status.success() {
                     return Err(format!(
                         "compilation failed for dependency source: {}",

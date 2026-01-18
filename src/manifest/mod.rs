@@ -1,5 +1,5 @@
 use crate::{
-    absolute_path::AbsolutePath,
+    absolute_path::{AbsolutePath, normalize_path_for_tools},
     manifest::{
         dependency::Dependency, edition::Edition, package_type::PackageType,
         pattern_path::PatternPath,
@@ -62,7 +62,7 @@ impl Manifest {
         if has_glob_meta && let Ok(paths) = glob::glob(&pattern) {
             return paths
                 .filter_map(Result::ok)
-                .map(|p| p.to_string_lossy().to_string())
+                .map(|p| normalize_path_for_tools(&p))
                 .collect::<Vec<_>>();
         }
 
@@ -97,10 +97,11 @@ impl Manifest {
             .parse::<toml::Table>()
             .map_err(|_| "The main manifest is not valid TOML Table".to_string())?;
 
-        let name = Self::parse_name(&toml_table)?;
-        let version = Self::parse_version(&toml_table)?;
         let _edition = Edition::parse_edition(&toml_table)
             .map_err(|e| format!("Failed to parse edition: {}", e))?;
+
+        let name = Self::parse_name(&toml_table)?;
+        let version = Self::parse_version(&toml_table)?;
 
         let type_ = toml_table
             .get("type")

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::absolute_path::AbsolutePath;
+use crate::absolute_path::{AbsolutePath, normalize_path_for_tools};
 
 #[derive(Clone)]
 pub struct PatternPath {
@@ -39,6 +39,6 @@ impl PatternPath {
 impl Display for PatternPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let abs_path = self.base.inner().join(&self.pattern);
-        write!(f, "{}", abs_path.to_string_lossy())
+        write!(f, "{}", normalize_path_for_tools(&abs_path))
     }
 }
