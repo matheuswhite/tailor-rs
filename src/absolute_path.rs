@@ -16,6 +16,25 @@ impl AbsolutePath {
     }
 }
 
+pub fn normalize_path_for_tools(path: &Path) -> String {
+    #[cfg(windows)]
+    {
+        let s = path.to_string_lossy();
+        let s = s.as_ref();
+        if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+            return format!(r"\\{}", rest);
+        }
+        if let Some(rest) = s.strip_prefix(r"\\?\") {
+            return rest.to_string();
+        }
+        s.to_string()
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string_lossy().into_owned()
+    }
+}
+
 impl TryFrom<&Path> for AbsolutePath {
     type Error = String;
 

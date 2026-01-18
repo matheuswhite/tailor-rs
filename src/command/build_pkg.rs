@@ -17,47 +17,51 @@ pub struct BuildPkg {
 }
 
 impl Command for BuildPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()>
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
     where
         Self: Sized,
     {
         if args.is_empty() || args[0] != "build" {
-            return None;
+            return Ok(false);
         }
 
         match args.len() {
             1 => {
                 self.mode = Mode::Debug;
-                self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                self.path = std::env::current_dir()
+                    .map_err(|err| err.to_string())?
+                    .try_into()?;
 
-                Some(())
+                Ok(true)
             }
             2 => {
                 match args[1].as_str().try_into() {
                     Ok(mode) => {
                         self.mode = mode;
-                        self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                        self.path = std::env::current_dir()
+                            .map_err(|err| err.to_string())?
+                            .try_into()?;
                     }
                     Err(_) => {
                         self.mode = Mode::Debug;
-                        self.path = PathBuf::from(&args[1]).try_into().ok()?;
+                        self.path = PathBuf::from(&args[1]).try_into()?;
                     }
                 }
 
-                Some(())
+                Ok(true)
             }
             3 => {
                 let mode = match args[1].as_str().try_into() {
                     Ok(mode) => mode,
-                    Err(_) => return None,
+                    Err(_) => return Err("Invalid mode".to_string()),
                 };
 
                 self.mode = mode;
-                self.path = PathBuf::from(&args[2]).try_into().ok()?;
+                self.path = PathBuf::from(&args[2]).try_into()?;
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err("Too many arguments for build command".to_string()),
         }
     }
 
