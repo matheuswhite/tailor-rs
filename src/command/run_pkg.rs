@@ -17,6 +17,16 @@ pub struct RunPkg {
 }
 
 impl Command for RunPkg {
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor run [--debug|--release] [<path>]\n\n\
+            Build and run a Tailor binary package located at the specified path.\n\n\
+            Options:\n\
+            \t--debug\tBuild and run in debug mode (default)\n\
+            \t--release\tBuild and run in release mode",
+        )
+    }
+
     fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
         if args.is_empty() || args[0] != "run" {
             return Ok(false);

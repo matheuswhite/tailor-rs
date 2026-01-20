@@ -9,6 +9,16 @@ pub struct NewPkg {
 }
 
 impl Command for NewPkg {
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor new [--bin|--lib] <path>\n\n\
+            Create a new Tailor package at the specified path.\n\n\
+            Options:\n\
+            \t--bin\tCreate a binary (application) package (default)\n\
+            \t--lib\tCreate a library package",
+        )
+    }
+
     fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
     where
         Self: Sized,
@@ -18,7 +28,7 @@ impl Command for NewPkg {
         }
 
         match args.len() {
-            1 => Err("Too few arguments for new command".to_string()),
+            1 => Err("Too few arguments".to_string()),
             2 => {
                 self.path = PathBuf::from_str(&args[1]).map_err(|_| "invalid path".to_string())?;
                 self.name = self
@@ -47,7 +57,7 @@ impl Command for NewPkg {
 
                 Ok(true)
             }
-            _ => Err("Too many arguments for new command".to_string()),
+            _ => Err("Too many arguments".to_string()),
         }
     }
 

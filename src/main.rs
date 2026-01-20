@@ -40,19 +40,19 @@ fn main() {
             Ok(false) => continue,
             Ok(true) => {
                 if let Err(err) = cmd.execute() {
-                    error_handling(err);
+                    error_handling(err, cmd.help());
                 }
                 return;
             }
-            Err(err) => error_handling(err),
+            Err(err) => error_handling(err, cmd.help()),
         }
     }
 
     help();
 }
 
-fn error_handling(err: String) -> ! {
-    eprintln!("\n{}: {}", error(), err);
+fn error_handling(err: String, help_message: String) -> ! {
+    eprintln!("\n{}: {}\n\n{}", error(), err, help_message);
     std::process::exit(1);
 }
 

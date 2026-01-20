@@ -67,6 +67,14 @@ impl CleanPkg {
 }
 
 impl Command for CleanPkg {
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor clean [<path>]\n\n\
+            Clean the build artifacts of the Tailor package located at the specified path.\n\n\
+            If no path is provided, the current directory is used.",
+        )
+    }
+
     fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
         if args.is_empty() || args[0] != "clean" {
             return Ok(false);

@@ -17,6 +17,16 @@ pub struct BuildPkg {
 }
 
 impl Command for BuildPkg {
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor build [--debug|--release] [<path>]\n\n\
+            Build a Tailor package located at the specified path.\n\n\
+            Options:\n\
+            \t--debug\tBuild in debug mode (default)\n\
+            \t--release\tBuild in release mode",
+        )
+    }
+
     fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
     where
         Self: Sized,
