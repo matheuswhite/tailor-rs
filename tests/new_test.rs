@@ -20,7 +20,7 @@ fn test_new_binary_package() {
     let test_path = test_dir.path();
     let user = TailorUser;
 
-    user.new_binary(Some(test_path), false)
+    user.new_binary(Some(test_path), false, None)
         .assert_success(&["Creating", "binary"]);
 
     let test_path = CheckDir::from(test_path);
@@ -86,7 +86,7 @@ fn test_new_binary_package_with_bin_flag() {
     let test_path = test_dir.path();
     let user = TailorUser;
 
-    user.new_binary(Some(test_path), true)
+    user.new_binary(Some(test_path), true, None)
         .assert_success(&["Creating", "binary"]);
 
     let test_path = CheckDir::from(test_path);
@@ -117,7 +117,7 @@ fn test_new_binary_package_with_existing_folder() {
 
     std::fs::create_dir_all(test_path).expect("Failed to create test directory");
 
-    user.new_binary(Some(test_path), false)
+    user.new_binary(Some(test_path), false, None)
         .assert_failure(&["already exists"]);
 }
 
@@ -125,6 +125,23 @@ fn test_new_binary_package_with_existing_folder() {
 fn test_new_binary_without_path() {
     let user = TailorUser;
 
-    user.new_binary(None, false)
+    user.new_binary(None, false, None)
         .assert_failure(&["Too few arguments"]);
+}
+
+#[test]
+fn test_new_binary_with_much_arguments() {
+    let test_dir = TestDir::new("hello");
+    let test_path = test_dir.path();
+    let user = TailorUser;
+
+    user.new_binary(Some(test_path), true, Some("world"))
+        .assert_failure(&["Too many arguments"]);
+}
+
+#[test]
+fn test_no_args() {
+    let user = TailorUser;
+
+    user.no_args().assert_failure(&["no valid command found"]);
 }

@@ -52,6 +52,7 @@ fn main() {
         "\n{}: no valid command found. See `tailor --help` for usage.",
         error()
     );
+    std::process::exit(1);
 }
 
 fn error_handling(err: String, help_message: String) -> ! {

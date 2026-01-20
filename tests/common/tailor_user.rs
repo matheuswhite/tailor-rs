@@ -10,7 +10,13 @@ impl TailorUser {
         PathBuf::from(env!("CARGO_BIN_EXE_tailor"))
     }
 
-    pub fn new_binary(&self, path: Option<&Path>, flag: bool) -> Output {
+    pub fn no_args(&self) -> Output {
+        Command::new(TailorUser::tailor_binary())
+            .output()
+            .expect("Failed to execute tailor")
+    }
+
+    pub fn new_binary(&self, path: Option<&Path>, flag: bool, extra_arg: Option<&str>) -> Output {
         let mut args = vec!["new".to_string()];
 
         if flag {
@@ -19,6 +25,10 @@ impl TailorUser {
 
         if let Some(p) = path {
             args.push(p.to_string_lossy().to_string());
+        }
+
+        if let Some(extra) = extra_arg {
+            args.push(extra.to_string());
         }
 
         Command::new(TailorUser::tailor_binary())
