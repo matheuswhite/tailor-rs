@@ -53,7 +53,7 @@ impl Command for RunPkg {
                         self.mode = Mode::Debug;
                         self.path = PathBuf::from(&args[1])
                             .try_into()
-                            .map_err(|_| "invalid path".to_string())?;
+                            .map_err(|err| format!("invalid path: {}", err))?;
                     }
                 }
 
@@ -62,17 +62,24 @@ impl Command for RunPkg {
             3 => {
                 let mode = match args[1].as_str().try_into() {
                     Ok(mode) => mode,
-                    Err(_) => return Err("invalid mode".to_string()),
+                    Err(_) => {
+                        return Err(
+                            "invalid mode. Valid modes are --debug or --release".to_string()
+                        );
+                    }
                 };
 
                 self.mode = mode;
                 self.path = PathBuf::from(&args[2])
                     .try_into()
-                    .map_err(|_| "invalid path".to_string())?;
+                    .map_err(|err| format!("invalid path: {}", err))?;
 
                 Ok(true)
             }
-            _ => Err("invalid arguments".to_string()),
+            _ => Err(format!(
+                "invalid arguments: expected at most 2 arguments after 'run' (mode and optional path), got {}",
+                args.len() - 1
+            )),
         }
     }
 

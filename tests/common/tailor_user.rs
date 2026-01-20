@@ -1,7 +1,6 @@
 use std::{
     path::{Path, PathBuf},
     process::{Command, Output},
-    vec,
 };
 
 pub struct TailorUser;

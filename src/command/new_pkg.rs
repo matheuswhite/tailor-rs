@@ -1,5 +1,5 @@
 use crate::{command::Command, manifest::package_type::PackageType};
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct NewPkg {
@@ -30,7 +30,7 @@ impl Command for NewPkg {
         match args.len() {
             1 => Err("Too few arguments".to_string()),
             2 => {
-                self.path = PathBuf::from_str(&args[1]).map_err(|_| "invalid path".to_string())?;
+                self.path = PathBuf::from(&args[1]);
                 self.name = self
                     .path
                     .file_name()
@@ -44,10 +44,10 @@ impl Command for NewPkg {
                 match args[1].as_str() {
                     "--bin" => self.pkg_type = PackageType::Binary,
                     "--lib" => self.pkg_type = PackageType::Library,
-                    _ => return Ok(false),
+                    _ => return Err(format!("unknown flag: {}", args[1])),
                 }
 
-                self.path = PathBuf::from_str(&args[2]).map_err(|_| "invalid path".to_string())?;
+                self.path = PathBuf::from(&args[2]);
                 self.name = self
                     .path
                     .file_name()

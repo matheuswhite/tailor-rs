@@ -48,7 +48,10 @@ fn main() {
         }
     }
 
-    help();
+    eprintln!(
+        "\n{}: no valid command found. See `tailor --help` for usage.",
+        error()
+    );
 }
 
 fn error_handling(err: String, help_message: String) -> ! {
