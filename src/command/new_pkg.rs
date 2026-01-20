@@ -1,5 +1,5 @@
 use crate::{command::Command, manifest::package_type::PackageType};
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct NewPkg {
@@ -9,17 +9,28 @@ pub struct NewPkg {
 }
 
 impl Command for NewPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()>
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor new [--bin|--lib] <path>\n\n\
+            Create a new Tailor package at the specified path.\n\n\
+            Options:\n\
+            \t--bin\tCreate a binary (application) package (default)\n\
+            \t--lib\tCreate a library package",
+        )
+    }
+
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
     where
         Self: Sized,
     {
-        match args.len() {
-            2 => {
-                if args[0] != "new" {
-                    return None;
-                }
+        if args.is_empty() || args[0] != "new" {
+            return Ok(false);
+        }
 
-                self.path = PathBuf::from_str(&args[1]).ok()?;
+        match args.len() {
+            1 => Err("Too few arguments".to_string()),
+            2 => {
+                self.path = PathBuf::from(&args[1]);
                 self.name = self
                     .path
                     .file_name()
@@ -27,20 +38,16 @@ impl Command for NewPkg {
                     .map(String::from)
                     .unwrap_or_default();
 
-                Some(())
+                Ok(true)
             }
             3 => {
-                if args[0] != "new" {
-                    return None;
-                }
-
                 match args[1].as_str() {
                     "--bin" => self.pkg_type = PackageType::Binary,
                     "--lib" => self.pkg_type = PackageType::Library,
-                    _ => return None,
+                    _ => return Err(format!("unknown flag: {}", args[1])),
                 }
 
-                self.path = PathBuf::from_str(&args[2]).ok()?;
+                self.path = PathBuf::from(&args[2]);
                 self.name = self
                     .path
                     .file_name()
@@ -48,9 +55,9 @@ impl Command for NewPkg {
                     .map(String::from)
                     .unwrap_or_default();
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err("Too many arguments".to_string()),
         }
     }
 

@@ -5,7 +5,7 @@ use crate::{
     mode::Mode,
     package::Package,
 };
-use std::path::Path;
+use std::{path::Path, process::Command};
 
 pub struct Compiler {
     compiler: String,
@@ -13,6 +13,15 @@ pub struct Compiler {
 }
 
 impl Compiler {
+    #[cfg(not(windows))]
+    const SHELL_CMD: &'static str = "sh";
+    #[cfg(not(windows))]
+    const SHELL_OPTION: &'static str = "-c";
+    #[cfg(windows)]
+    const SHELL_CMD: &'static str = "cmd";
+    #[cfg(windows)]
+    const SHELL_OPTION: &'static str = "/C";
+
     pub fn new(compiler: &str, pkg_full_name: String) -> Self {
         Self {
             compiler: compiler.to_string(),
@@ -95,11 +104,13 @@ impl Compiler {
                     CompileCommandEntry::new(source_dir.to_owned(), arguments, source_file);
                 compile_command_entries.push(compile_command_entry);
 
-                let status = std::process::Command::new("sh")
-                    .arg("-c")
-                    .arg(compile_cmd)
+                let status = Command::new(Self::SHELL_CMD)
+                    .arg(Self::SHELL_OPTION)
+                    .arg(&compile_cmd)
                     .status()
-                    .map_err(|e| format!("failed to execute compile command: {}", e))?;
+                    .map_err(|e| {
+                        format!("failed to execute compile command `{}`: {}", compile_cmd, e)
+                    })?;
                 if !status.success() {
                     return Err(format!(
                         "compilation failed for dependency source: {}",
@@ -136,8 +147,8 @@ impl Compiler {
             ),
         };
 
-        let status = std::process::Command::new("sh")
-            .arg("-c")
+        let status = Command::new(Self::SHELL_CMD)
+            .arg(Self::SHELL_OPTION)
             .arg(link_cmd)
             .status()
             .map_err(|e| format!("failed to execute link command: {}", e))?;

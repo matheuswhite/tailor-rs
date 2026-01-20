@@ -16,6 +16,40 @@ impl AbsolutePath {
     }
 }
 
+/// Normalizes a filesystem path string for consumption by external tools.
+///
+/// On Windows, `std::fs::canonicalize` and other APIs can yield extended-length
+/// paths prefixed with `\\?\` (or `\\?\UNC\` for UNC/network paths). While
+/// these prefixes are valid for Win32 file APIs, many third-party tools and
+/// compilers treat them as opaque/invalid and fail to open files.
+///
+/// This helper removes those extended-length prefixes to produce a more widely
+/// accepted path string:
+///
+/// - `\\?\C:\\path\\to\\file` → `C:\\path\\to\\file`
+/// - `\\?\UNC\\server\\share\\file` → `\\server\\share\\file`
+///
+/// On non-Windows platforms this is a no-op (aside from lossy UTF-8
+/// conversion).
+pub fn normalize_path_for_tools(path: &Path) -> String {
+    #[cfg(windows)]
+    {
+        let s = path.to_string_lossy();
+        let s = s.as_ref();
+        if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+            return format!(r"\\{}", rest);
+        }
+        if let Some(rest) = s.strip_prefix(r"\\?\") {
+            return rest.to_string();
+        }
+        s.to_string()
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string_lossy().into_owned()
+    }
+}
+
 impl TryFrom<&Path> for AbsolutePath {
     type Error = String;
 

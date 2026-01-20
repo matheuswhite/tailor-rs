@@ -17,44 +17,69 @@ pub struct RunPkg {
 }
 
 impl Command for RunPkg {
-    fn parse_args(&mut self, args: &[String]) -> Option<()> {
+    fn help(&self) -> String {
+        String::from(
+            "Usage: tailor run [--debug|--release] [<path>]\n\n\
+            Build and run a Tailor binary package located at the specified path.\n\n\
+            Options:\n\
+            \t--debug\tBuild and run in debug mode (default)\n\
+            \t--release\tBuild and run in release mode",
+        )
+    }
+
+    fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
         if args.is_empty() || args[0] != "run" {
-            return None;
+            return Ok(false);
         }
 
         match args.len() {
             1 => {
                 self.mode = Mode::Debug;
-                self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                self.path = std::env::current_dir()
+                    .map_err(|err| err.to_string())?
+                    .try_into()?;
 
-                Some(())
+                Ok(true)
             }
             2 => {
                 match args[1].as_str().try_into() {
                     Ok(mode) => {
                         self.mode = mode;
-                        self.path = std::env::current_dir().ok()?.try_into().ok()?;
+                        self.path = std::env::current_dir()
+                            .map_err(|err| err.to_string())?
+                            .try_into()?;
                     }
                     Err(_) => {
                         self.mode = Mode::Debug;
-                        self.path = PathBuf::from(&args[1]).try_into().ok()?;
+                        self.path = PathBuf::from(&args[1])
+                            .try_into()
+                            .map_err(|err| format!("invalid path: {}", err))?;
                     }
                 }
 
-                Some(())
+                Ok(true)
             }
             3 => {
                 let mode = match args[1].as_str().try_into() {
                     Ok(mode) => mode,
-                    Err(_) => return None,
+                    Err(_) => {
+                        return Err(
+                            "invalid mode. Valid modes are --debug or --release".to_string()
+                        );
+                    }
                 };
 
                 self.mode = mode;
-                self.path = PathBuf::from(&args[2]).try_into().ok()?;
+                self.path = PathBuf::from(&args[2])
+                    .try_into()
+                    .map_err(|err| format!("invalid path: {}", err))?;
 
-                Some(())
+                Ok(true)
             }
-            _ => None,
+            _ => Err(format!(
+                "invalid arguments: expected at most 2 arguments after 'run' (mode and optional path), got {}",
+                args.len() - 1
+            )),
         }
     }
 
@@ -79,7 +104,7 @@ impl Command for RunPkg {
                         format!("--{}", mode_name),
                         self.path.inner().to_string_lossy().to_string(),
                     ])
-                    .ok_or("Failed to parse build arguments".to_string())?;
+                    .map_err(|err| format!("Failed to parse build arguments: {}", err))?;
                 build.execute()?;
 
                 let executable_path = self

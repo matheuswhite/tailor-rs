@@ -30,17 +30,37 @@ fn main() {
     ];
     let args = args().collect::<Vec<String>>();
 
+    if args.contains(&"--help".to_owned()) || args.contains(&"-h".to_owned()) {
+        help();
+        return;
+    }
+
     for cmd in commands {
-        if cmd.parse_args(&args[1..]).is_some() {
-            let res = cmd.execute();
-            if let Err(e) = res {
-                eprintln!("\n{}: {}", error(), e);
-                std::process::exit(1);
+        match cmd.parse_args(&args[1..]) {
+            Ok(false) => continue,
+            Ok(true) => {
+                if let Err(err) = cmd.execute() {
+                    error_handling(err, cmd.help());
+                }
+                return;
             }
-            return;
+            Err(err) => error_handling(err, cmd.help()),
         }
     }
 
+    eprintln!(
+        "\n{}: no valid command found. See `tailor --help` for usage.",
+        error()
+    );
+    std::process::exit(1);
+}
+
+fn error_handling(err: String, help_message: String) -> ! {
+    eprintln!("\n{}: {}\n\n{}", error(), err, help_message);
+    std::process::exit(1);
+}
+
+fn help() {
     println!("C language package manager\n");
     println!("Usage: tailor [COMMAND] [OPTIONS] <path>\n");
     println!("Options:");

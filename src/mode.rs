@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 #[derive(Clone, Copy, Default)]
 pub enum Mode {
     #[default]
@@ -17,8 +19,8 @@ impl TryFrom<&str> for Mode {
     }
 }
 
-impl std::fmt::Display for Mode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Mode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Mode::Debug => write!(f, "debug"),
             Mode::Release => write!(f, "release"),

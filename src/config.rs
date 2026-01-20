@@ -49,7 +49,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            registry_url: "https://registry.tailor.rs".to_string(),
+            registry_url: "https://registry.tailor.build".to_string(),
         }
     }
 }
