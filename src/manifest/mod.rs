@@ -97,7 +97,8 @@ impl Manifest {
             .parse::<toml::Table>()
             .map_err(|_| "The main manifest is not valid TOML Table".to_string())?;
 
-        let _edition = Edition::parse_edition(&toml_table)
+        // Validate the edition field; the returned value is not currently stored.
+        Edition::parse_edition(&toml_table)
             .map_err(|e| format!("Failed to parse edition: {}", e))?;
 
         let name = Self::parse_name(&toml_table)?;

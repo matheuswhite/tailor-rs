@@ -39,7 +39,9 @@ fn main() {
         match cmd.parse_args(&args[1..]) {
             Ok(false) => continue,
             Ok(true) => {
-                cmd.execute().unwrap_or_else(error_handling);
+                if let Err(err) = cmd.execute() {
+                    error_handling(err);
+                }
                 return;
             }
             Err(err) => error_handling(err),
@@ -49,7 +51,7 @@ fn main() {
     help();
 }
 
-fn error_handling(err: String) {
+fn error_handling(err: String) -> ! {
     eprintln!("\n{}: {}", error(), err);
     std::process::exit(1);
 }

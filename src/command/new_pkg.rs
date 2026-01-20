@@ -18,12 +18,8 @@ impl Command for NewPkg {
         }
 
         match args.len() {
-            0 | 1 => Err("Too few arguments for new command".to_string()),
+            1 => Err("Too few arguments for new command".to_string()),
             2 => {
-                if args[0] != "new" {
-                    return Ok(false);
-                }
-
                 self.path = PathBuf::from_str(&args[1]).map_err(|_| "invalid path".to_string())?;
                 self.name = self
                     .path
@@ -35,10 +31,6 @@ impl Command for NewPkg {
                 Ok(true)
             }
             3 => {
-                if args[0] != "new" {
-                    return Ok(false);
-                }
-
                 match args[1].as_str() {
                     "--bin" => self.pkg_type = PackageType::Binary,
                     "--lib" => self.pkg_type = PackageType::Library,

@@ -53,7 +53,7 @@ impl Command for BuildPkg {
             3 => {
                 let mode = match args[1].as_str().try_into() {
                     Ok(mode) => mode,
-                    Err(_) => return Err("Invalid mode".to_string()),
+                    Err(_) => return Err("invalid mode".to_string()),
                 };
 
                 self.mode = mode;

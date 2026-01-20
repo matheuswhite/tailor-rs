@@ -87,7 +87,7 @@ impl Command for RunPkg {
                         format!("--{}", mode_name),
                         self.path.inner().to_string_lossy().to_string(),
                     ])
-                    .map_err(|_| "Failed to parse build arguments".to_string())?;
+                    .map_err(|err| format!("Failed to parse build arguments: {}", err))?;
                 build.execute()?;
 
                 let executable_path = self

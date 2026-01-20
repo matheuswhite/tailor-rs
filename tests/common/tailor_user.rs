@@ -8,21 +8,18 @@ pub struct TailorUser;
 
 impl TailorUser {
     fn tailor_binary() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("target")
-            .join("release")
-            .join("tailor")
+        PathBuf::from(env!("CARGO_BIN_EXE_tailor"))
     }
 
     pub fn new_binary(&self, path: Option<&Path>, flag: bool) -> Output {
-        let mut args = vec!["new"];
+        let mut args = vec!["new".to_string()];
 
         if flag {
-            args.push("--bin");
+            args.push("--bin".to_string());
         }
 
         if let Some(p) = path {
-            args.push(p.to_str().unwrap());
+            args.push(p.to_string_lossy().to_string());
         }
 
         Command::new(TailorUser::tailor_binary())
@@ -32,10 +29,13 @@ impl TailorUser {
     }
 
     pub fn new_library(&self, path: Option<&Path>) -> Output {
-        let mut args = vec!["new", "--lib"];
+        let mut args = vec!["new", "--lib"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
 
         if let Some(p) = path {
-            args.push(p.to_str().unwrap());
+            args.push(p.to_string_lossy().to_string());
         }
 
         Command::new(TailorUser::tailor_binary())
