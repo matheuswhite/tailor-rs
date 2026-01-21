@@ -21,6 +21,7 @@ impl TailorUser {
         cmd.output().expect("Failed to execute tailor")
     }
 
+    #[allow(unused)]
     pub fn no_args(&self) -> Output {
         self.run_in_dir(&[], None)
     }
@@ -56,23 +57,10 @@ impl TailorUser {
         self.run_in_dir(&args, None)
     }
 
-    pub fn build(&self, mode: Option<&str>, path: Option<&Path>) -> Output {
-        let mut args = vec!["build".to_string()];
-
-        if let Some(m) = mode {
-            args.push(m.to_string());
-        }
-
-        if let Some(p) = path {
-            args.push(p.to_string_lossy().to_string());
-        }
-
-        self.run_in_dir(&args, None)
-    }
-
-    pub fn build_in_dir(
+    #[allow(unused)]
+    pub fn build(
         &self,
-        current_dir: &Path,
+        current_dir: Option<&Path>,
         mode: Option<&str>,
         path: Option<&Path>,
     ) -> Output {
@@ -86,7 +74,7 @@ impl TailorUser {
             args.push(p.to_string_lossy().to_string());
         }
 
-        self.run_in_dir(&args, Some(current_dir))
+        self.run_in_dir(&args, current_dir)
     }
 }
 

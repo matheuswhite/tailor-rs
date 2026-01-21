@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use crate::common::{
     check_dir::CheckDir, tailor_user::CheckOutput, tailor_user::TailorUser, test_dir::TestDir,
 };
@@ -13,7 +15,7 @@ fn test_build_binary_debug() {
     user.new_binary(Some(test_path), false, None)
         .assert_success(&["Creating", "binary"]);
 
-    user.build(Some("--debug"), Some(test_path))
+    user.build(None, Some("--debug"), Some(test_path))
         .assert_success(&["Finished", "debug"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("debug");
@@ -32,7 +34,7 @@ fn test_build_binary_no_flag() {
     user.new_binary(Some(test_path), false, None)
         .assert_success(&["Creating", "binary"]);
 
-    user.build(None, Some(test_path))
+    user.build(None, None, Some(test_path))
         .assert_success(&["Finished", "debug"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("debug");
@@ -51,7 +53,7 @@ fn test_build_binary_release() {
     user.new_binary(Some(test_path), false, None)
         .assert_success(&["Creating", "binary"]);
 
-    user.build(Some("--release"), Some(test_path))
+    user.build(None, Some("--release"), Some(test_path))
         .assert_success(&["Finished", "release"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("release");
@@ -70,7 +72,7 @@ fn test_build_library_debug() {
     user.new_library(Some(test_path))
         .assert_success(&["Creating", "library"]);
 
-    user.build(Some("--debug"), Some(test_path))
+    user.build(None, Some("--debug"), Some(test_path))
         .assert_success(&["Finished", "debug"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("debug");
@@ -91,7 +93,7 @@ fn test_build_library_no_flag() {
     user.new_library(Some(test_path))
         .assert_success(&["Creating", "library"]);
 
-    user.build(None, Some(test_path))
+    user.build(None, None, Some(test_path))
         .assert_success(&["Finished", "debug"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("debug");
@@ -112,7 +114,7 @@ fn test_build_library_release() {
     user.new_library(Some(test_path))
         .assert_success(&["Creating", "library"]);
 
-    user.build(Some("--release"), Some(test_path))
+    user.build(None, Some("--release"), Some(test_path))
         .assert_success(&["Finished", "release"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("release");
@@ -133,7 +135,7 @@ fn test_build_inside_folder() {
     user.new_binary(Some(test_path), false, None)
         .assert_success(&["Creating", "binary"]);
 
-    user.build_in_dir(test_path, None, None)
+    user.build(Some(test_path), None, None)
         .assert_success(&["Finished", "debug"]);
 
     let build_dir = CheckDir::from(test_path).join("build").join("debug");
@@ -151,7 +153,7 @@ fn test_build_without_manifest() {
 
     std::fs::create_dir_all(test_path).expect("Failed to create test directory");
 
-    user.build(None, Some(test_path))
+    user.build(None, None, Some(test_path))
         .assert_failure(&["fail to read Tailor.toml"]);
 }
 
@@ -171,6 +173,6 @@ fn test_build_with_errors() {
     )
     .expect("Failed to write invalid main.c");
 
-    user.build(None, Some(test_path))
+    user.build(None, None, Some(test_path))
         .assert_failure(&["compilation failed"]);
 }

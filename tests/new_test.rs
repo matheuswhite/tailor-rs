@@ -130,7 +130,7 @@ fn test_new_binary_without_path() {
 }
 
 #[test]
-fn test_new_binary_with_much_arguments() {
+fn test_new_binary_with_many_arguments() {
     let test_dir = TestDir::new("hello_many");
     let test_path = test_dir.path();
     let user = TailorUser;
