@@ -169,7 +169,7 @@ fn test_build_with_errors() {
     let main_c_path = test_path.join("src").join("main.c");
     std::fs::write(
         &main_c_path,
-        "#include <stdio.h>\n\nint main() { return; }\n",
+        "#include <stdio.h>\n\nint main() { retur; }\n",
     )
     .expect("Failed to write invalid main.c");
 
