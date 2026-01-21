@@ -40,4 +40,4 @@ jobs:
         with:
           toolchain: stable
       - run: cargo build --release --verbose
-      - run: cargo test --release --verbose -- --test-threads=1
+      - run: cargo test --release --verbose

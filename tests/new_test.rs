@@ -82,7 +82,7 @@ fn test_new_library_package() {
 
 #[test]
 fn test_new_binary_package_with_bin_flag() {
-    let test_dir = TestDir::new("hello");
+    let test_dir = TestDir::new("hello_bin_flag");
     let test_path = test_dir.path();
     let user = TailorUser;
 
@@ -104,14 +104,14 @@ fn test_new_binary_package_with_bin_flag() {
         .assert(&expected_main_c);
 
     let expected_manifest =
-        "name = \"hello\"\nversion = \"0.1.0\"\nedition = \"2026.1\"\n\n[dependencies]\n"
+        "name = \"hello_bin_flag\"\nversion = \"0.1.0\"\nedition = \"2026.1\"\n\n[dependencies]\n"
             .replace("\n", NEW_LINE);
     test_path.file("Tailor.toml").assert(&expected_manifest);
 }
 
 #[test]
 fn test_new_binary_package_with_existing_folder() {
-    let test_dir = TestDir::new("hello");
+    let test_dir = TestDir::new("hello_again");
     let test_path = test_dir.path();
     let user = TailorUser;
 
@@ -131,7 +131,7 @@ fn test_new_binary_without_path() {
 
 #[test]
 fn test_new_binary_with_much_arguments() {
-    let test_dir = TestDir::new("hello");
+    let test_dir = TestDir::new("hello_many");
     let test_path = test_dir.path();
     let user = TailorUser;
 
