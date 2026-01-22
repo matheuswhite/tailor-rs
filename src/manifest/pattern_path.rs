@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::absolute_path::{AbsolutePath, normalize_path_for_tools};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct PatternPath {
     base: AbsolutePath,
     pattern: String,

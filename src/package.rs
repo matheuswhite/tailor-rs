@@ -49,9 +49,11 @@ impl Package {
             mfst.set_includes(includes);
         }
 
+        let mut iter = dependency_tree.dfs_iter();
+
         Ok(Package {
-            manifest,
-            dependencies: dependency_tree.dfs_iter().skip(1).cloned().collect(),
+            manifest: iter.next().unwrap().clone(),
+            dependencies: iter.cloned().collect(),
         })
     }
 
@@ -62,7 +64,7 @@ impl Package {
         let dep_tree = Self::dep_tree_of_manifest(manifest, registry)?;
         let mut includes = vec![];
 
-        for mfst in dep_tree.dfs_iter().skip(1) {
+        for mfst in dep_tree.dfs_iter() {
             includes.extend(mfst.includes().to_vec());
         }
 

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 pub struct DependencyTree<T>
 where
     T: PartialEq,
@@ -22,8 +24,39 @@ where
 
 impl<T> DependencyTree<T>
 where
-    T: PartialEq,
+    T: PartialEq + Clone + Debug,
 {
+    fn resolve_inernal<F, A>(
+        root: T,
+        get_children: &F,
+        is_node_valid: &A,
+        visited: &mut Vec<T>,
+    ) -> Result<DependencyTree<T>, String>
+    where
+        F: Fn(&T) -> Result<Vec<T>, String> + Clone,
+        A: Fn(&T) -> Result<(), String> + Clone,
+    {
+        if visited.contains(&root) {
+            return Err(format!("Cyclic dependency detected for node {:?}", root));
+        }
+
+        visited.push(root.clone());
+
+        let mut children = vec![];
+
+        for child in get_children(&root)? {
+            is_node_valid(&child)?;
+
+            let child_tree = Self::resolve_inernal(child, get_children, is_node_valid, visited)?;
+            children.push(child_tree);
+        }
+
+        Ok(DependencyTree {
+            node: root,
+            children,
+        })
+    }
+
     pub fn resolve<F, A>(
         root: T,
         get_children: F,
@@ -33,19 +66,8 @@ where
         F: Fn(&T) -> Result<Vec<T>, String> + Clone,
         A: Fn(&T) -> Result<(), String> + Clone,
     {
-        let mut children = vec![];
-
-        for child in get_children(&root)? {
-            is_node_valid(&child)?;
-
-            let child_tree = Self::resolve(child, get_children.clone(), is_node_valid.clone())?;
-            children.push(child_tree);
-        }
-
-        Ok(DependencyTree {
-            node: root,
-            children,
-        })
+        let mut visited = vec![];
+        Self::resolve_inernal(root, &get_children, &is_node_valid, &mut visited)
     }
 
     pub fn dfs_iter(&self) -> DfsIterator<'_, T> {

@@ -4,7 +4,7 @@ use crate::{
     storage::Storage,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Dependency {
     Registry {
         name: String,
