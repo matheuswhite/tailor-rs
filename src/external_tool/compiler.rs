@@ -48,14 +48,13 @@ impl Compiler {
         pkg_type: PackageType,
         defines: Vec<String>,
     ) -> Result<(), String> {
-        let mut dependencies = package.dependencies().to_vec();
-        dependencies.push(package.manifest().clone());
+        let manifests = package.manifests();
 
         let mut object_list = vec![];
         let mut compile_command_entries = vec![];
 
-        let mut progress = Progress::new("Building", dependencies.len());
-        for dependency in dependencies {
+        let mut progress = Progress::new("Building", manifests.len());
+        for dependency in manifests {
             let message = format!(
                 "{} {} v{}",
                 success("Compiling"),

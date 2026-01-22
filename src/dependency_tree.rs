@@ -1,98 +1,93 @@
-use std::fmt::Debug;
+use crate::{external_tool::registry::Registry, manifest::Manifest, storage::Storage};
 
-pub struct DependencyTree<T>
-where
-    T: PartialEq,
-{
-    node: T,
-    children: Vec<DependencyTree<T>>,
+pub struct DependencyTree {
+    manifest: Manifest,
+    children: Vec<DependencyTree>,
 }
 
-pub struct DfsIterator<'a, T>
-where
-    T: PartialEq,
-{
-    stack: Vec<&'a DependencyTree<T>>,
+pub struct DfsIterator<'a> {
+    stack: Vec<&'a DependencyTree>,
 }
 
-pub struct DfsIteratorMut<'a, T>
-where
-    T: PartialEq,
-{
-    stack: Vec<&'a mut DependencyTree<T>>,
+pub struct DfsIteratorMut<'a> {
+    stack: Vec<&'a mut DependencyTree>,
 }
 
-impl<T> DependencyTree<T>
-where
-    T: PartialEq + Clone + Debug,
-{
-    fn resolve_inernal<F, A>(
-        root: T,
-        get_children: &F,
-        is_node_valid: &A,
-        visited: &mut Vec<T>,
-    ) -> Result<DependencyTree<T>, String>
-    where
-        F: Fn(&T) -> Result<Vec<T>, String> + Clone,
-        A: Fn(&T) -> Result<(), String> + Clone,
-    {
-        if visited.contains(&root) {
-            return Err(format!("Cyclic dependency detected for node {:?}", root));
-        }
-
-        visited.push(root.clone());
-
-        let mut children = vec![];
-
-        for child in get_children(&root)? {
-            is_node_valid(&child)?;
-
-            let child_tree = Self::resolve_inernal(child, get_children, is_node_valid, visited)?;
-            children.push(child_tree);
-        }
-
-        Ok(DependencyTree {
-            node: root,
-            children,
-        })
-    }
-
-    pub fn resolve<F, A>(
-        root: T,
-        get_children: F,
-        is_node_valid: A,
-    ) -> Result<DependencyTree<T>, String>
-    where
-        F: Fn(&T) -> Result<Vec<T>, String> + Clone,
-        A: Fn(&T) -> Result<(), String> + Clone,
-    {
+impl DependencyTree {
+    pub fn resolve(manifest: Manifest, registry: &Registry) -> Result<DependencyTree, String> {
         let mut visited = vec![];
-        Self::resolve_inernal(root, &get_children, &is_node_valid, &mut visited)
+        Self::resolve_inernal(manifest, &mut visited, registry)
     }
 
-    pub fn dfs_iter(&self) -> DfsIterator<'_, T> {
+    pub fn dfs_iter(&self) -> DfsIterator<'_> {
         DfsIterator { stack: vec![self] }
     }
 
-    pub fn dfs_iter_mut(&mut self) -> DfsIteratorMut<'_, T> {
+    pub fn dfs_iter_mut(&mut self) -> DfsIteratorMut<'_> {
         DfsIteratorMut { stack: vec![self] }
     }
-}
 
-impl<T> PartialEq for DependencyTree<T>
-where
-    T: PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.node == other.node
+    pub fn root(&self) -> &Manifest {
+        &self.manifest
+    }
+
+    fn get_children(manifest: &Manifest, registry: &Registry) -> Result<Vec<Manifest>, String> {
+        let mut deps = vec![];
+
+        for dep in manifest.dependencies() {
+            let dep_manifest = Storage::download(dep.clone(), registry)?;
+            deps.push(dep_manifest);
+        }
+
+        Ok(deps)
+    }
+
+    fn is_manifest_valid(manifest: &Manifest) -> Result<(), String> {
+        if manifest.is_library() {
+            Ok(())
+        } else {
+            Err(format!(
+                "Dependency {} is not a library package",
+                manifest.full_name()
+            ))
+        }
+    }
+
+    fn resolve_inernal(
+        manifest: Manifest,
+        visited: &mut Vec<Manifest>,
+        registry: &Registry,
+    ) -> Result<DependencyTree, String> {
+        if visited.contains(&manifest) {
+            return Err(format!(
+                "Cyclic dependency detected for node {:?}",
+                manifest
+            ));
+        }
+
+        visited.push(manifest.clone());
+
+        let mut children = vec![];
+
+        for child in Self::get_children(&manifest, registry)? {
+            Self::is_manifest_valid(&child)?;
+
+            let child_tree = Self::resolve_inernal(child, visited, registry)?;
+            children.push(child_tree);
+        }
+
+        Ok(DependencyTree { manifest, children })
     }
 }
 
-impl<'a, T> Iterator for DfsIterator<'a, T>
-where
-    T: PartialEq,
-{
-    type Item = &'a T;
+impl PartialEq for DependencyTree {
+    fn eq(&self, other: &Self) -> bool {
+        self.manifest == other.manifest
+    }
+}
+
+impl<'a> Iterator for DfsIterator<'a> {
+    type Item = &'a Manifest;
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
@@ -101,15 +96,12 @@ where
             self.stack.push(child);
         }
 
-        Some(&current.node)
+        Some(&current.manifest)
     }
 }
 
-impl<'a, T> Iterator for DfsIteratorMut<'a, T>
-where
-    T: PartialEq,
-{
-    type Item = &'a mut T;
+impl<'a> Iterator for DfsIteratorMut<'a> {
+    type Item = &'a mut Manifest;
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
@@ -118,6 +110,6 @@ where
             self.stack.push(child);
         }
 
-        Some(&mut current.node)
+        Some(&mut current.manifest)
     }
 }
