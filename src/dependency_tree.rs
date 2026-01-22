@@ -1,5 +1,6 @@
 use crate::{external_tool::registry::Registry, manifest::Manifest, storage::Storage};
 
+#[derive(Clone)]
 pub struct DependencyTree {
     manifest: Manifest,
     children: Vec<DependencyTree>,
@@ -29,6 +30,23 @@ impl DependencyTree {
 
     pub fn root(&self) -> &Manifest {
         &self.manifest
+    }
+
+    pub fn sub_tree(&self, manifest: &Manifest) -> Option<DependencyTree> {
+        if &self.manifest == manifest {
+            return Some(DependencyTree {
+                manifest: self.manifest.clone(),
+                children: self.children.clone(),
+            });
+        }
+
+        for child in &self.children {
+            if let Some(sub_tree) = child.sub_tree(manifest) {
+                return Some(sub_tree);
+            }
+        }
+
+        None
     }
 
     fn get_children(manifest: &Manifest, registry: &Registry) -> Result<Vec<Manifest>, String> {
@@ -67,16 +85,22 @@ impl DependencyTree {
 
         visited.push(manifest.clone());
 
-        let mut children = vec![];
+        let result = (|| {
+            let mut children = vec![];
 
-        for child in Self::get_children(&manifest, registry)? {
-            Self::is_manifest_valid(&child)?;
+            for child in Self::get_children(&manifest, registry)? {
+                Self::is_manifest_valid(&child)?;
 
-            let child_tree = Self::resolve_inernal(child, visited, registry)?;
-            children.push(child_tree);
-        }
+                let child_tree = Self::resolve_inernal(child, visited, registry)?;
+                children.push(child_tree);
+            }
 
-        Ok(DependencyTree { manifest, children })
+            Ok(DependencyTree { manifest, children })
+        })();
+
+        visited.pop();
+
+        result
     }
 }
 

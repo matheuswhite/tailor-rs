@@ -11,9 +11,13 @@ pub struct Package {
 impl Package {
     pub fn load_from_manifest(manifest: Manifest, registry: &Registry) -> Result<Self, String> {
         let mut dep_tree = DependencyTree::resolve(manifest, registry)?;
+        let subtrees = dep_tree
+            .dfs_iter()
+            .map(|mfst| dep_tree.sub_tree(mfst).unwrap())
+            .collect::<Vec<_>>();
 
-        for mfst in dep_tree.dfs_iter_mut() {
-            let includes = Self::resolve_includes(mfst, registry)?;
+        for (mfst, subtree) in dep_tree.dfs_iter_mut().zip(subtrees) {
+            let includes = Self::resolve_includes(subtree)?;
             mfst.set_includes(includes);
         }
 
@@ -37,11 +41,7 @@ impl Package {
         self.dep_tree.root()
     }
 
-    fn resolve_includes(
-        manifest: &Manifest,
-        registry: &Registry,
-    ) -> Result<Vec<PatternPath>, String> {
-        let dep_tree = DependencyTree::resolve(manifest.clone(), registry)?;
+    fn resolve_includes(dep_tree: DependencyTree) -> Result<Vec<PatternPath>, String> {
         let mut includes = vec![];
 
         for mfst in dep_tree.dfs_iter() {
