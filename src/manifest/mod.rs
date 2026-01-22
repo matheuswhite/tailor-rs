@@ -12,7 +12,7 @@ pub mod kv;
 pub mod package_type;
 pub mod pattern_path;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Manifest {
     name: String,
     version: String,

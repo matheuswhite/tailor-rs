@@ -1,4 +1,5 @@
 use crate::{
+    dependency_tree::DependencyTree,
     external_tool::registry::Registry,
     manifest::{Manifest, kv::KeyValue, pattern_path::PatternPath},
     storage::Storage,
@@ -10,52 +11,59 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn load_from_manifest(mut manifest: Manifest, registry: &Registry) -> Result<Self, String> {
-        let mut open_list = manifest.dependencies().clone();
-        let mut closed_list = vec![];
-        let mut dependencies = vec![];
+    fn dep_tree_of_manifest(
+        manifest: &Manifest,
+        registry: &Registry,
+    ) -> Result<DependencyTree<Manifest>, String> {
+        DependencyTree::resolve(
+            manifest.clone(),
+            |mfst| {
+                let mut deps = vec![];
 
-        while let Some(dependency) = open_list.pop() {
-            if closed_list.contains(&dependency) {
-                continue;
-            }
+                for dep in mfst.dependencies() {
+                    let dep_manifest = Storage::download(dep.clone(), registry)?;
 
-            let dep_manifest = Storage::download(dependency.clone(), registry)?;
-            if !dep_manifest.is_library() {
-                return Err(format!(
-                    "Dependency {} is not a library package",
-                    dep_manifest.full_name()
-                ));
-            }
-
-            closed_list.push(dependency.clone());
-            dependencies.push(dep_manifest.clone());
-
-            for dep in dep_manifest.dependencies() {
-                if !closed_list.contains(&dep) {
-                    open_list.push(dep);
+                    deps.push(dep_manifest);
                 }
-            }
+
+                Ok(deps)
+            },
+            |mfst| {
+                if mfst.is_library() {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "Dependency {} is not a library package",
+                        mfst.full_name()
+                    ))
+                }
+            },
+        )
+    }
+
+    pub fn load_from_manifest(manifest: Manifest, registry: &Registry) -> Result<Self, String> {
+        let mut dependency_tree = Self::dep_tree_of_manifest(&manifest, registry)?;
+
+        for mfst in dependency_tree.dfs_iter_mut() {
+            let includes = Self::resolve_includes(mfst, registry)?;
+            mfst.set_includes(includes);
         }
 
-        manifest.set_includes(Self::resolve_includes(&manifest)?);
-        for dep in dependencies.iter_mut() {
-            dep.set_includes(Self::resolve_includes(dep)?);
-        }
-
-        Ok(Self {
+        Ok(Package {
             manifest,
-            dependencies,
+            dependencies: dependency_tree.dfs_iter().skip(1).cloned().collect(),
         })
     }
 
-    fn resolve_includes(manifest: &Manifest) -> Result<Vec<PatternPath>, String> {
-        let mut includes = manifest.includes().to_vec();
+    fn resolve_includes(
+        manifest: &Manifest,
+        registry: &Registry,
+    ) -> Result<Vec<PatternPath>, String> {
+        let dep_tree = Self::dep_tree_of_manifest(manifest, registry)?;
+        let mut includes = vec![];
 
-        for dependency in manifest.dependencies() {
-            let dep_manifest = Storage::download(dependency.clone(), &Registry::default())?;
-
-            includes.extend(dep_manifest.includes().to_vec());
+        for mfst in dep_tree.dfs_iter().skip(1) {
+            includes.extend(mfst.includes().to_vec());
         }
 
         Ok(includes)

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq)]
 pub struct AbsolutePath(PathBuf);
 
 impl AbsolutePath {
