@@ -10,10 +10,20 @@ impl TailorUser {
         PathBuf::from(env!("CARGO_BIN_EXE_tailor"))
     }
 
+    fn run_in_dir(&self, args: &[String], current_dir: Option<&Path>) -> Output {
+        let mut cmd = Command::new(TailorUser::tailor_binary());
+        cmd.args(args);
+
+        if let Some(dir) = current_dir {
+            cmd.current_dir(dir);
+        }
+
+        cmd.output().expect("Failed to execute tailor")
+    }
+
+    #[allow(unused)]
     pub fn no_args(&self) -> Output {
-        Command::new(TailorUser::tailor_binary())
-            .output()
-            .expect("Failed to execute tailor")
+        self.run_in_dir(&[], None)
     }
 
     pub fn new_binary(&self, path: Option<&Path>, flag: bool, extra_arg: Option<&str>) -> Output {
@@ -31,10 +41,7 @@ impl TailorUser {
             args.push(extra.to_string());
         }
 
-        Command::new(TailorUser::tailor_binary())
-            .args(&args)
-            .output()
-            .expect("Failed to execute tailor")
+        self.run_in_dir(&args, None)
     }
 
     pub fn new_library(&self, path: Option<&Path>) -> Output {
@@ -47,10 +54,27 @@ impl TailorUser {
             args.push(p.to_string_lossy().to_string());
         }
 
-        Command::new(TailorUser::tailor_binary())
-            .args(&args)
-            .output()
-            .expect("Failed to execute tailor")
+        self.run_in_dir(&args, None)
+    }
+
+    #[allow(unused)]
+    pub fn build(
+        &self,
+        current_dir: Option<&Path>,
+        mode: Option<&str>,
+        path: Option<&Path>,
+    ) -> Output {
+        let mut args = vec!["build".to_string()];
+
+        if let Some(m) = mode {
+            args.push(m.to_string());
+        }
+
+        if let Some(p) = path {
+            args.push(p.to_string_lossy().to_string());
+        }
+
+        self.run_in_dir(&args, current_dir)
     }
 }
 

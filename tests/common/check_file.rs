@@ -5,6 +5,16 @@ pub struct CheckFile {
 }
 
 impl CheckFile {
+    #[allow(unused)]
+    pub fn assert_exists(&self) {
+        assert!(
+            self.path.exists() && self.path.is_file(),
+            "Expected file {:?} to exist, but it does not.",
+            self.path
+        );
+    }
+
+    #[allow(unused)]
     pub fn assert(self, expected: &str) {
         assert!(
             self.path.exists(),

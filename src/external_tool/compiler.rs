@@ -1,4 +1,5 @@
 use crate::{
+    absolute_path::normalize_path_for_tools,
     external_tool::compile_commands::CompileCommandEntry,
     fmt::{Progress, success},
     manifest::package_type::PackageType,
@@ -36,7 +37,7 @@ impl Compiler {
             .ok_or_else(|| "invalid source file".to_string())?
             .to_string_lossy();
         let object_path = build_path.join(format!("{}.o", file_stem));
-        Ok(object_path.to_string_lossy().to_string())
+        Ok(normalize_path_for_tools(&object_path))
     }
 
     pub fn build(
