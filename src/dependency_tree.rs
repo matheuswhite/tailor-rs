@@ -17,7 +17,7 @@ pub struct DfsIteratorMut<'a> {
 impl DependencyTree {
     pub fn resolve(manifest: Manifest, registry: &Registry) -> Result<DependencyTree, String> {
         let mut visited = vec![];
-        Self::resolve_inernal(manifest, &mut visited, registry)
+        Self::resolve_internal(manifest, &mut visited, registry)
     }
 
     pub fn dfs_iter(&self) -> DfsIterator<'_> {
@@ -30,23 +30,6 @@ impl DependencyTree {
 
     pub fn root(&self) -> &Manifest {
         &self.manifest
-    }
-
-    pub fn sub_tree(&self, manifest: &Manifest) -> Option<DependencyTree> {
-        if &self.manifest == manifest {
-            return Some(DependencyTree {
-                manifest: self.manifest.clone(),
-                children: self.children.clone(),
-            });
-        }
-
-        for child in &self.children {
-            if let Some(sub_tree) = child.sub_tree(manifest) {
-                return Some(sub_tree);
-            }
-        }
-
-        None
     }
 
     fn get_children(manifest: &Manifest, registry: &Registry) -> Result<Vec<Manifest>, String> {
@@ -71,7 +54,7 @@ impl DependencyTree {
         }
     }
 
-    fn resolve_inernal(
+    fn resolve_internal(
         manifest: Manifest,
         visited: &mut Vec<Manifest>,
         registry: &Registry,
@@ -91,7 +74,7 @@ impl DependencyTree {
             for child in Self::get_children(&manifest, registry)? {
                 Self::is_manifest_valid(&child)?;
 
-                let child_tree = Self::resolve_inernal(child, visited, registry)?;
+                let child_tree = Self::resolve_internal(child, visited, registry)?;
                 children.push(child_tree);
             }
 
@@ -111,29 +94,31 @@ impl PartialEq for DependencyTree {
 }
 
 impl<'a> Iterator for DfsIterator<'a> {
-    type Item = &'a Manifest;
+    type Item = (DependencyTree, &'a Manifest);
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
+        let current_copy = current.clone();
 
         for child in current.children.iter().rev() {
             self.stack.push(child);
         }
 
-        Some(&current.manifest)
+        Some((current_copy, &current.manifest))
     }
 }
 
 impl<'a> Iterator for DfsIteratorMut<'a> {
-    type Item = &'a mut Manifest;
+    type Item = (DependencyTree, &'a mut Manifest);
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.stack.pop()?;
+        let current_copy = current.clone();
 
         for child in current.children.iter_mut().rev() {
             self.stack.push(child);
         }
 
-        Some(&mut current.manifest)
+        Some((current_copy, &mut current.manifest))
     }
 }
