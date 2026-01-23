@@ -3,6 +3,7 @@
 mod absolute_path;
 mod command;
 mod config;
+mod dependency_tree;
 mod external_tool;
 mod fmt;
 mod manifest;

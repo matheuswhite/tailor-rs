@@ -1,10 +1,10 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KeyValue {
     pub key: String,
     pub value: Value,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value {
     String(String),
     Integer(i64),

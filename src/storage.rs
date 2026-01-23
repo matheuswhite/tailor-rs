@@ -64,8 +64,12 @@ impl Storage {
 
     fn load_manifest(storage_name: &AbsolutePath) -> Result<Manifest, String> {
         let manifest_path = storage_name.inner().join("Tailor.toml");
-        let manifest_content = std::fs::read_to_string(manifest_path)
-            .map_err(|_| "Failed to read manifest from storage".to_string())?;
+        let manifest_content = std::fs::read_to_string(&manifest_path).map_err(|_| {
+            format!(
+                "Failed to read manifest from storage: {}",
+                manifest_path.display()
+            )
+        })?;
         let manifest = Manifest::from_file(&manifest_content, storage_name)?;
 
         Ok(manifest)
