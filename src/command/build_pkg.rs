@@ -1,101 +1,74 @@
 use crate::{
     absolute_path::AbsolutePath,
-    command::Command,
+    command::CommandIF,
     external_tool::{compiler::Compiler, registry::Registry},
     fmt::success,
     manifest::Manifest,
     mode::Mode,
     package::Package,
 };
+
+use clap::{Args, ValueEnum};
 use std::{path::PathBuf, time::Instant};
 
-#[derive(Default)]
-pub struct BuildPkg {
-    path: AbsolutePath,
-    mode: Mode,
-    registry: Registry,
+#[derive(Default, Copy, Clone, Debug, ValueEnum)]
+pub enum BuildMode {
+    #[default]
+    Debug,
+    Release,
 }
 
-impl Command for BuildPkg {
-    fn help(&self) -> String {
-        String::from(
-            "Usage: tailor build [--debug|--release] [<path>]\n\n\
-            Build a Tailor package located at the specified path.\n\n\
-            Options:\n\
-            \t--debug\tBuild in debug mode (default)\n\
-            \t--release\tBuild in release mode",
-        )
+#[derive(Debug, Args)]
+#[command(about = "Build a Tailor package located at the specified path.", long_about = None)]
+pub struct BuildPkg {
+    #[arg(long, value_enum, default_value_t = BuildMode::default())]
+    #[arg(conflicts_with_all = &["debug", "release"], help = "Specify the build mode (debug or release).")]
+    build_mode: BuildMode,
+
+    #[arg(long, conflicts_with_all = &["release", "build_mode"], help = "Build the package in debug mode. [Default]")]
+    debug: bool,
+    #[arg(long, conflicts_with_all = &["debug", "build_mode"], help = "Build the package in release mode.")]
+    release: bool,
+
+    #[arg(
+        help = "The path to the Tailor package to build. If not provided, the current directory is used.",
+        default_value = "."
+    )]
+    path: String,
+}
+
+impl CommandIF for BuildPkg {
+    fn command(&self) -> Result<(), String> {
+        let path: AbsolutePath = PathBuf::from(&self.path).try_into()?;
+        let mode = if self.release || matches!(self.build_mode, BuildMode::Release) {
+            Mode::Release
+        } else {
+            Mode::Debug
+        };
+
+        BuildPkg::build(path, mode)
     }
+}
 
-    fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
-    where
-        Self: Sized,
-    {
-        if args.is_empty() || args[0] != "build" {
-            return Ok(false);
-        }
-
-        match args.len() {
-            1 => {
-                self.mode = Mode::Debug;
-                self.path = std::env::current_dir()
-                    .map_err(|err| err.to_string())?
-                    .try_into()?;
-
-                Ok(true)
-            }
-            2 => {
-                match args[1].as_str().try_into() {
-                    Ok(mode) => {
-                        self.mode = mode;
-                        self.path = std::env::current_dir()
-                            .map_err(|err| err.to_string())?
-                            .try_into()?;
-                    }
-                    Err(_) => {
-                        self.mode = Mode::Debug;
-                        self.path = PathBuf::from(&args[1]).try_into()?;
-                    }
-                }
-
-                Ok(true)
-            }
-            3 => {
-                let mode = match args[1].as_str().try_into() {
-                    Ok(mode) => mode,
-                    Err(_) => {
-                        return Err(
-                            "invalid mode. Valid modes are --debug or --release".to_string()
-                        );
-                    }
-                };
-
-                self.mode = mode;
-                self.path = PathBuf::from(&args[2]).try_into()?;
-
-                Ok(true)
-            }
-            _ => Err("Too many arguments for build command".to_string()),
-        }
-    }
-
-    fn execute(&self) -> Result<(), String> {
+impl BuildPkg {
+    pub fn build(path: AbsolutePath, mode: Mode) -> Result<(), String> {
         let start = Instant::now();
-        let manifest_content = std::fs::read_to_string(self.path.inner().join("Tailor.toml"))
+        let registry = Registry::default();
+        let manifest_content = std::fs::read_to_string(path.inner().join("Tailor.toml"))
             .map_err(|_| "fail to read Tailor.toml".to_string())?;
-        let manifest = Manifest::from_file(&manifest_content, &self.path)?;
-        let pkg = Package::load_from_manifest(manifest, &self.registry)?;
+        let manifest = Manifest::from_file(&manifest_content, &path)?;
+        let pkg = Package::load_from_manifest(manifest, &registry)?;
 
         let manifest = pkg.manifest();
         let pkg_type = manifest.pkg_type();
-        let base_path = self.path.inner().join("build");
+        let base_path = path.inner().join("build");
         let defines = pkg
             .options()
             .into_iter()
             .map(|def| def.to_define())
             .collect();
 
-        let path = match self.mode {
+        let path = match mode {
             Mode::Debug => base_path.join("debug"),
             Mode::Release => base_path.join("release"),
         };
@@ -104,12 +77,12 @@ impl Command for BuildPkg {
 
         let compiler = Compiler::new(manifest.compiler(), manifest.full_name());
 
-        compiler.build(self.mode, &path, pkg, pkg_type, defines)?;
+        compiler.build(mode, &path, pkg, pkg_type, defines)?;
 
         println!(
             "{} `{}` profile target in {:.2}s",
             success("Finished"),
-            self.mode,
+            mode,
             start.elapsed().as_secs_f32()
         );
 

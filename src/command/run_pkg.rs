@@ -1,118 +1,67 @@
 use crate::{
     absolute_path::AbsolutePath,
-    command::{Command, build_pkg::BuildPkg},
+    command::{
+        CommandIF,
+        build_pkg::{BuildMode, BuildPkg},
+    },
     external_tool::registry::Registry,
     fmt::success,
     manifest::{Manifest, package_type::PackageType},
     mode::Mode,
     package::Package,
 };
+
+use clap::Args;
 use std::path::PathBuf;
 
-#[derive(Default)]
+#[derive(Debug, Args)]
+#[command(about = "Build and run a Tailor binary package located at the specified path.", long_about = None)]
 pub struct RunPkg {
-    mode: Mode,
-    path: AbsolutePath,
-    registry: Registry,
+    #[arg(long, value_enum, default_value_t = BuildMode::default())]
+    #[arg(conflicts_with_all = &["debug", "release"], help = "Specify the build mode (debug or release).")]
+    build_mode: BuildMode,
+
+    #[arg(long, conflicts_with_all = &["release", "build_mode"], help = "Build the package in debug mode.")]
+    debug: bool,
+    #[arg(long, conflicts_with_all = &["debug", "build_mode"], help = "Build the package in release mode.")]
+    release: bool,
+
+    #[arg(
+        help = "The path to the Tailor package to build and run. If not provided, the current directory is used.",
+        default_value = "."
+    )]
+    path: String,
 }
 
-impl Command for RunPkg {
-    fn help(&self) -> String {
-        String::from(
-            "Usage: tailor run [--debug|--release] [<path>]\n\n\
-            Build and run a Tailor binary package located at the specified path.\n\n\
-            Options:\n\
-            \t--debug\tBuild and run in debug mode (default)\n\
-            \t--release\tBuild and run in release mode",
-        )
-    }
+impl CommandIF for RunPkg {
+    fn command(&self) -> Result<(), String> {
+        let path: AbsolutePath = PathBuf::from(&self.path).try_into()?;
+        let mode = if self.release || matches!(self.build_mode, BuildMode::Release) {
+            Mode::Release
+        } else {
+            Mode::Debug
+        };
 
-    fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
-        if args.is_empty() || args[0] != "run" {
-            return Ok(false);
-        }
+        let mode_name = mode.to_string();
+        let registry = Registry::default();
 
-        match args.len() {
-            1 => {
-                self.mode = Mode::Debug;
-                self.path = std::env::current_dir()
-                    .map_err(|err| err.to_string())?
-                    .try_into()?;
-
-                Ok(true)
-            }
-            2 => {
-                match args[1].as_str().try_into() {
-                    Ok(mode) => {
-                        self.mode = mode;
-                        self.path = std::env::current_dir()
-                            .map_err(|err| err.to_string())?
-                            .try_into()?;
-                    }
-                    Err(_) => {
-                        self.mode = Mode::Debug;
-                        self.path = PathBuf::from(&args[1])
-                            .try_into()
-                            .map_err(|err| format!("invalid path: {}", err))?;
-                    }
-                }
-
-                Ok(true)
-            }
-            3 => {
-                let mode = match args[1].as_str().try_into() {
-                    Ok(mode) => mode,
-                    Err(_) => {
-                        return Err(
-                            "invalid mode. Valid modes are --debug or --release".to_string()
-                        );
-                    }
-                };
-
-                self.mode = mode;
-                self.path = PathBuf::from(&args[2])
-                    .try_into()
-                    .map_err(|err| format!("invalid path: {}", err))?;
-
-                Ok(true)
-            }
-            _ => Err(format!(
-                "invalid arguments: expected at most 2 arguments after 'run' (mode and optional path), got {}",
-                args.len() - 1
-            )),
-        }
-    }
-
-    fn execute(&self) -> Result<(), String> {
-        let mode_name = self.mode.to_string();
-
-        let manifest_content = std::fs::read_to_string(self.path.inner().join("Tailor.toml"))
+        let manifest_content = std::fs::read_to_string(path.inner().join("Tailor.toml"))
             .map_err(|_| "fail to read Tailor.toml")?;
-        let manifest = Manifest::from_file(&manifest_content, &self.path)?;
-        let pkg = Package::load_from_manifest(manifest, &self.registry)?;
+        let manifest = Manifest::from_file(&manifest_content, &path)?;
+        let pkg = Package::load_from_manifest(manifest, &registry)?;
 
         let pkg_type = pkg.manifest().pkg_type();
         let pkg_name = pkg.manifest().full_name();
 
         match pkg_type {
-            PackageType::Library => Err("It's not possible run a library package".to_string()),
+            PackageType::Library => {
+                return Err("It's not possible run a library package".to_string());
+            }
             PackageType::Binary => {
-                let mut build = BuildPkg::default();
-                build
-                    .parse_args(&[
-                        "build".to_string(),
-                        format!("--{}", mode_name),
-                        self.path.inner().to_string_lossy().to_string(),
-                    ])
-                    .map_err(|err| format!("Failed to parse build arguments: {}", err))?;
-                build.execute()?;
+                BuildPkg::build(path.clone(), mode)?;
 
-                let executable_path = self
-                    .path
-                    .inner()
-                    .join("build")
-                    .join(mode_name)
-                    .join(&pkg_name);
+                let executable_path = path.inner().join("build").join(mode_name).join(&pkg_name);
+
                 println!(
                     "{} `{}`",
                     success("Running"),
@@ -124,9 +73,9 @@ impl Command for RunPkg {
                 if !status.success() {
                     return Err("execution failed".to_string());
                 }
-
-                Ok(())
             }
-        }
+        };
+
+        Ok(())
     }
 }

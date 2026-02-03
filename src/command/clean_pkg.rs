@@ -1,9 +1,58 @@
-use crate::{absolute_path::AbsolutePath, command::Command, fmt::success, manifest::Manifest};
+use crate::{absolute_path::AbsolutePath, command::CommandIF, fmt::success, manifest::Manifest};
+
+use clap::Args;
 use std::path::{Path, PathBuf};
 
-#[derive(Default)]
+#[derive(Debug, Args)]
+#[command(about = "Clean the build artifacts of the Tailor package located at the specified path.", long_about = None)]
 pub struct CleanPkg {
-    path: AbsolutePath,
+    #[arg(
+        help = "The path to the Tailor package to clean. If not provided, the current directory is used.",
+        default_value = "."
+    )]
+    path: String,
+}
+
+impl CommandIF for CleanPkg {
+    fn command(&self) -> Result<(), String> {
+        let path: AbsolutePath = PathBuf::from(&self.path).try_into()?;
+        let manifest_content = std::fs::read_to_string(path.inner().join("Tailor.toml"))
+            .map_err(|_| "fail to read Tailor.toml".to_string())?;
+        let _manifest = Manifest::from_file(&manifest_content, &path)?;
+
+        let build_path = path.join("build").inner().to_owned();
+
+        let total_files = if build_path.exists() {
+            Self::count_dir_recursively(&build_path)
+        } else {
+            0
+        };
+
+        let total_size = if build_path.exists() {
+            Self::dir_size(&build_path)
+        } else {
+            0
+        };
+
+        if build_path.exists() {
+            std::fs::remove_dir_all(&build_path)
+                .map_err(|e| format!("Failed to clean build directory: {}", e))?;
+        }
+
+        println!(
+            "{} {} file{}{}",
+            success("Removed"),
+            total_files,
+            if total_files != 1 { "s" } else { "" },
+            if total_size > 0 {
+                format!(", {} total", Self::to_fmt_bytes(total_size))
+            } else {
+                "".to_string()
+            }
+        );
+
+        Ok(())
+    }
 }
 
 impl CleanPkg {
@@ -63,76 +112,5 @@ impl CleanPkg {
         } else {
             format!("{}B", bytes)
         }
-    }
-}
-
-impl Command for CleanPkg {
-    fn help(&self) -> String {
-        String::from(
-            "Usage: tailor clean [<path>]\n\n\
-            Clean the build artifacts of the Tailor package located at the specified path.\n\n\
-            If no path is provided, the current directory is used.",
-        )
-    }
-
-    fn parse_args(&mut self, args: &[String]) -> Result<bool, String> {
-        if args.is_empty() || args[0] != "clean" {
-            return Ok(false);
-        }
-
-        match args.len() {
-            1 => {
-                self.path = std::env::current_dir()
-                    .map_err(|err| err.to_string())?
-                    .try_into()?;
-
-                Ok(true)
-            }
-            2 => {
-                self.path = PathBuf::from(&args[1]).try_into()?;
-
-                Ok(true)
-            }
-            _ => Err("Too many arguments for clean command".to_string()),
-        }
-    }
-
-    fn execute(&self) -> Result<(), String> {
-        let manifest_content = std::fs::read_to_string(self.path.inner().join("Tailor.toml"))
-            .map_err(|_| "fail to read Tailor.toml".to_string())?;
-        let _manifest = Manifest::from_file(&manifest_content, &self.path)?;
-
-        let build_path = self.path.join("build").inner().to_owned();
-
-        let total_files = if build_path.exists() {
-            Self::count_dir_recursively(&build_path)
-        } else {
-            0
-        };
-
-        let total_size = if build_path.exists() {
-            Self::dir_size(&build_path)
-        } else {
-            0
-        };
-
-        if build_path.exists() {
-            std::fs::remove_dir_all(&build_path)
-                .map_err(|e| format!("Failed to clean build directory: {}", e))?;
-        }
-
-        println!(
-            "{} {} file{}{}",
-            success("Removed"),
-            total_files,
-            if total_files != 1 { "s" } else { "" },
-            if total_size > 0 {
-                format!(", {} total", Self::to_fmt_bytes(total_size))
-            } else {
-                "".to_string()
-            }
-        );
-
-        Ok(())
     }
 }

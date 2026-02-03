@@ -8,6 +8,7 @@ name = "tailor"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4.5.56", features = ["derive"] }
 dirs = "6.0.0"
 flate2 = "1.1.5"
 glob = "0.3.3"
