@@ -19,7 +19,7 @@ use clap::Parser;
 
 #[derive(Debug, Parser)]
 #[command(name = "tailor")]
-#[command(about = "A tool for managing and maintaining monorepos.", long_about = None)]
+#[command(about = "A C package manager inspired by Rust's Cargo", long_about = None)]
 struct CliCommands {
     #[command(subcommand)]
     command: AppCommands,
@@ -33,7 +33,6 @@ fn main() {
 
     let args = CliCommands::parse();
 
-    dbg!(&args);
     if let Err(err) = args.command.command() {
         eprintln!("\n{}: {}", error(), err);
         std::process::exit(1);

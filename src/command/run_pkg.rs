@@ -55,7 +55,7 @@ impl CommandIF for RunPkg {
 
         match pkg_type {
             PackageType::Library => {
-                return Err("It's not possible run a library package".to_string());
+                return Err("It's not possible to run a library package".to_string());
             }
             PackageType::Binary => {
                 BuildPkg::build(path.clone(), mode)?;

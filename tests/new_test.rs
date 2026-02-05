@@ -144,5 +144,5 @@ fn test_no_args() {
     let user = TailorUser;
 
     user.no_args()
-        .assert_failure(&["A tool for managing and maintaining monorepos"]);
+        .assert_failure(&["A C package manager inspired by Rust's Cargo"]);
 }
