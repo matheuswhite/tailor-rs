@@ -126,7 +126,7 @@ fn test_new_binary_without_path() {
     let user = TailorUser;
 
     user.new_binary(None, false, None)
-        .assert_failure(&["Too few arguments"]);
+        .assert_failure(&["error: the following required arguments were not provided"]);
 }
 
 #[test]
@@ -136,12 +136,13 @@ fn test_new_binary_with_many_arguments() {
     let user = TailorUser;
 
     user.new_binary(Some(test_path), true, Some("world"))
-        .assert_failure(&["Too many arguments"]);
+        .assert_failure(&["error: unexpected argument 'world' found"]);
 }
 
 #[test]
 fn test_no_args() {
     let user = TailorUser;
 
-    user.no_args().assert_failure(&["no valid command found"]);
+    user.no_args()
+        .assert_failure(&["A tool for managing and maintaining monorepos"]);
 }

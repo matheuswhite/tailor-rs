@@ -112,8 +112,9 @@ impl CheckOutput for Output {
         for &word in words {
             assert!(
                 stderr.contains(word),
-                "Error output should contain '{}', but it was not found.",
-                word
+                "Error output should contain '{}', but it was not found. ({})",
+                word,
+                stderr
             );
         }
     }
