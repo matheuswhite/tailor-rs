@@ -11,11 +11,19 @@ mod mode;
 mod package;
 mod storage;
 
-use crate::command::clean_pkg::CleanPkg;
-use crate::command::{build_pkg::BuildPkg, new_pkg::NewPkg, run_pkg::RunPkg};
+use crate::command::{AppCommands, CommandIF};
 use crate::config::Config;
-use crate::{command::Command, fmt::error};
-use std::env::args;
+use crate::fmt::error;
+
+use clap::Parser;
+
+#[derive(Debug, Parser)]
+#[command(name = "tailor")]
+#[command(about = "A C package manager inspired by Rust's Cargo", long_about = None)]
+struct CliCommands {
+    #[command(subcommand)]
+    command: AppCommands,
+}
 
 fn main() {
     if let Err(err) = Config::create_default_config() {
@@ -23,55 +31,10 @@ fn main() {
         return;
     };
 
-    let commands: &mut [&mut dyn Command] = &mut [
-        &mut NewPkg::default(),
-        &mut BuildPkg::default(),
-        &mut RunPkg::default(),
-        &mut CleanPkg::default(),
-    ];
-    let args = args().collect::<Vec<String>>();
+    let args = CliCommands::parse();
 
-    if args.contains(&"--help".to_owned()) || args.contains(&"-h".to_owned()) {
-        help();
-        return;
+    if let Err(err) = args.command.command() {
+        eprintln!("\n{}: {}", error(), err);
+        std::process::exit(1);
     }
-
-    for cmd in commands {
-        match cmd.parse_args(&args[1..]) {
-            Ok(false) => continue,
-            Ok(true) => {
-                if let Err(err) = cmd.execute() {
-                    error_handling(err, cmd.help());
-                }
-                return;
-            }
-            Err(err) => error_handling(err, cmd.help()),
-        }
-    }
-
-    eprintln!(
-        "\n{}: no valid command found. See `tailor --help` for usage.",
-        error()
-    );
-    std::process::exit(1);
-}
-
-fn error_handling(err: String, help_message: String) -> ! {
-    eprintln!("\n{}: {}\n\n{}", error(), err, help_message);
-    std::process::exit(1);
-}
-
-fn help() {
-    println!("C language package manager\n");
-    println!("Usage: tailor [COMMAND] [OPTIONS] <path>\n");
-    println!("Options:");
-    println!("  --bin       Create a binary package (only for `new` command) (default)");
-    println!("  --lib       Create a library package (only for `new` command)");
-    println!("  --debug     Build (or run) in debug mode (default)");
-    println!("  --release   Build (or run) in release mode\n");
-    println!("Commands:");
-    println!("  new         Create a new package");
-    println!("  build       Build the package");
-    println!("  run         Run the package");
-    println!("  clean       Clean the build artifacts");
 }

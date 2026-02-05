@@ -1,70 +1,44 @@
-use crate::{command::Command, manifest::package_type::PackageType};
+use crate::command::CommandIF;
+
+use clap::{Args, ValueEnum};
 use std::path::PathBuf;
 
-#[derive(Default)]
-pub struct NewPkg {
-    path: PathBuf,
-    name: String,
-    pkg_type: PackageType,
+#[derive(Default, Copy, Clone, Debug, ValueEnum)]
+enum PkgType {
+    #[default]
+    Bin,
+    Lib,
 }
 
-impl Command for NewPkg {
-    fn help(&self) -> String {
-        String::from(
-            "Usage: tailor new [--bin|--lib] <path>\n\n\
-            Create a new Tailor package at the specified path.\n\n\
-            Options:\n\
-            \t--bin\tCreate a binary (application) package (default)\n\
-            \t--lib\tCreate a library package",
-        )
-    }
+#[derive(Debug, Args)]
+#[command(about = "Create a new Tailor package at the specified path.", long_about = None)]
+pub struct NewPkg {
+    #[arg(long, value_enum, default_value_t = PkgType::default())]
+    #[arg(conflicts_with_all = &["lib", "bin"], help = "Specify the package type (binary or library).")]
+    pkg_type: PkgType,
 
-    fn parse_args(&mut self, args: &[String]) -> Result<bool, String>
-    where
-        Self: Sized,
-    {
-        if args.is_empty() || args[0] != "new" {
-            return Ok(false);
-        }
+    #[arg(long, conflicts_with_all = &["lib", "pkg_type"], help = "Create a binary (application) package. [Default]")]
+    bin: bool,
+    #[arg(long, conflicts_with_all = &["bin", "pkg_type"], help = "Create a library package.")]
+    lib: bool,
 
-        match args.len() {
-            1 => Err("Too few arguments".to_string()),
-            2 => {
-                self.path = PathBuf::from(&args[1]);
-                self.name = self
-                    .path
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .map(String::from)
-                    .unwrap_or_default();
+    #[arg(required = true)]
+    path: String,
+}
 
-                Ok(true)
-            }
-            3 => {
-                match args[1].as_str() {
-                    "--bin" => self.pkg_type = PackageType::Binary,
-                    "--lib" => self.pkg_type = PackageType::Library,
-                    _ => return Err(format!("unknown flag: {}", args[1])),
-                }
+impl CommandIF for NewPkg {
+    fn command(&self) -> Result<(), String> {
+        let path = PathBuf::from(&self.path);
+        let name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(String::from)
+            .unwrap_or_default();
 
-                self.path = PathBuf::from(&args[2]);
-                self.name = self
-                    .path
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .map(String::from)
-                    .unwrap_or_default();
-
-                Ok(true)
-            }
-            _ => Err("Too many arguments".to_string()),
-        }
-    }
-
-    fn execute(&self) -> Result<(), String> {
-        match self.pkg_type {
-            PackageType::Binary => bin::new_pkg(&self.path, &self.name),
-            PackageType::Library => lib::new_pkg(&self.path, &self.name),
+        if self.lib || matches!(self.pkg_type, PkgType::Lib) {
+            lib::new_pkg(&path, &name)
+        } else {
+            bin::new_pkg(&path, &name)
         }
     }
 }
