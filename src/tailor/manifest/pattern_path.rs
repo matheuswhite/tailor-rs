@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter};
-
 use crate::absolute_path::{AbsolutePath, normalize_path_for_tools};
+
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct PatternPath {

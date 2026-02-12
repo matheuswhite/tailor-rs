@@ -1,8 +1,6 @@
-use crate::{
-    dependency_tree::DependencyTree,
-    external_tool::registry::Registry,
-    manifest::{Manifest, kv::KeyValue, pattern_path::PatternPath},
-};
+use crate::dependency_tree::DependencyTree;
+use crate::manifest::{Manifest, kv::KeyValue, pattern_path::PatternPath};
+use crate::sources::registry::Registry;
 
 pub struct Package {
     dep_tree: DependencyTree,

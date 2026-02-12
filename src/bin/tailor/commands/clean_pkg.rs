@@ -1,4 +1,8 @@
-use crate::{absolute_path::AbsolutePath, command::CommandIF, fmt::success, manifest::Manifest};
+use crate::commands::CommandIF;
+
+use tailor::absolute_path::AbsolutePath;
+use tailor::fmt::success;
+use tailor::manifest::Manifest;
 
 use clap::Args;
 use std::path::{Path, PathBuf};

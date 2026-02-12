@@ -1,9 +1,6 @@
-use crate::{
-    absolute_path::{AbsolutePath, normalize_path_for_tools},
-    manifest::{
-        dependency::Dependency, edition::Edition, package_type::PackageType,
-        pattern_path::PatternPath,
-    },
+use crate::absolute_path::{AbsolutePath, normalize_path_for_tools};
+use crate::manifest::{
+    dependency::Dependency, edition::Edition, package_type::PackageType, pattern_path::PatternPath,
 };
 
 pub mod dependency;

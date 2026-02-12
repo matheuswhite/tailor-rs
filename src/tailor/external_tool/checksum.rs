@@ -1,9 +1,8 @@
-use std::{fs::File, io::Read};
+use crate::absolute_path::AbsolutePath;
 
 use sha2::{Digest, Sha256};
+use std::{fs::File, io::Read};
 use walkdir::WalkDir;
-
-use crate::absolute_path::AbsolutePath;
 
 pub struct Checksum(pub [u8; 32]);
 

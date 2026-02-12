@@ -1,11 +1,10 @@
-use crate::{
-    absolute_path::normalize_path_for_tools,
-    external_tool::compile_commands::CompileCommandEntry,
-    fmt::{Progress, success},
-    manifest::package_type::PackageType,
-    mode::Mode,
-    package::Package,
-};
+use crate::absolute_path::normalize_path_for_tools;
+use crate::external_tool::compile_commands::CompileCommandEntry;
+use crate::fmt::{Progress, success};
+use crate::manifest::package_type::PackageType;
+use crate::mode::Mode;
+use crate::package::Package;
+
 use std::{path::Path, process::Command};
 
 pub struct Compiler {

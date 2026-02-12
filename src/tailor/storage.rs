@@ -1,11 +1,10 @@
-use std::path::Path;
+use crate::absolute_path::AbsolutePath;
+use crate::external_tool::checksum::Checksum;
+use crate::manifest::{Manifest, dependency::Dependency};
+use crate::sources::{git::Git, registry::Registry};
 
-use crate::{
-    absolute_path::AbsolutePath,
-    external_tool::{checksum::Checksum, git::Git, registry::Registry},
-    manifest::{Manifest, dependency::Dependency},
-};
 use dirs::home_dir;
+use std::path::Path;
 
 pub struct Storage;
 

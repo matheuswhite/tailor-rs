@@ -1,15 +1,14 @@
-use crate::{
-    absolute_path::AbsolutePath,
-    command::{
-        CommandIF,
-        build_pkg::{BuildMode, BuildPkg},
-    },
-    external_tool::registry::Registry,
-    fmt::success,
-    manifest::{Manifest, package_type::PackageType},
-    mode::Mode,
-    package::Package,
+use crate::commands::{
+    CommandIF,
+    build_pkg::{BuildMode, BuildPkg},
 };
+
+use tailor::absolute_path::AbsolutePath;
+use tailor::fmt::success;
+use tailor::manifest::{Manifest, package_type::PackageType};
+use tailor::mode::Mode;
+use tailor::package::Package;
+use tailor::sources::registry::Registry;
 
 use clap::Args;
 use std::path::PathBuf;

@@ -1,4 +1,4 @@
-use crate::command::CommandIF;
+use crate::commands::CommandIF;
 
 use clap::{Args, ValueEnum};
 use std::path::PathBuf;
@@ -46,10 +46,10 @@ impl CommandIF for NewPkg {
 mod bin {
     use std::path::Path;
 
-    use crate::fmt::success;
+    use tailor::fmt::success;
 
-    const MAIN_C: &str = include_str!("../../template/main.c");
-    const TAILOR_MANIFEST: &str = include_str!("../../template/bin/Tailor.toml");
+    const MAIN_C: &str = include_str!("../../../../template/main.c");
+    const TAILOR_MANIFEST: &str = include_str!("../../../../template/bin/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
         if path.exists() {
@@ -82,11 +82,11 @@ mod bin {
 mod lib {
     use std::path::Path;
 
-    use crate::fmt::success;
+    use tailor::fmt::success;
 
-    const LIB_C: &str = include_str!("../../template/lib.c");
-    const LIB_H: &str = include_str!("../../template/lib.h");
-    const TAILOR_MANIFEST: &str = include_str!("../../template/lib/Tailor.toml");
+    const LIB_C: &str = include_str!("../../../../template/lib.c");
+    const LIB_H: &str = include_str!("../../../../template/lib.h");
+    const TAILOR_MANIFEST: &str = include_str!("../../../../template/lib/Tailor.toml");
 
     pub fn new_pkg(path: &Path, name: &str) -> Result<(), String> {
         if path.exists() {

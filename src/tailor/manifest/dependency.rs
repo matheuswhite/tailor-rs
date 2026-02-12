@@ -1,8 +1,6 @@
-use crate::{
-    absolute_path::AbsolutePath,
-    manifest::kv::{KeyValue, Value},
-    storage::Storage,
-};
+use crate::absolute_path::AbsolutePath;
+use crate::manifest::kv::{KeyValue, Value};
+use crate::storage::Storage;
 
 #[derive(Clone, Debug)]
 pub enum Dependency {

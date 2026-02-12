@@ -1,19 +1,10 @@
 #![deny(warnings)]
 
-mod absolute_path;
-mod command;
-mod config;
-mod dependency_tree;
-mod external_tool;
-mod fmt;
-mod manifest;
-mod mode;
-mod package;
-mod storage;
+pub mod commands;
 
-use crate::command::{AppCommands, CommandIF};
-use crate::config::Config;
-use crate::fmt::error;
+use crate::commands::{AppCommands, CommandIF};
+use tailor::config::Config;
+use tailor::fmt::error;
 
 use clap::Parser;
 

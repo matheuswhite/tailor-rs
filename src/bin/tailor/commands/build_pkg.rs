@@ -1,12 +1,12 @@
-use crate::{
-    absolute_path::AbsolutePath,
-    command::CommandIF,
-    external_tool::{compiler::Compiler, registry::Registry},
-    fmt::success,
-    manifest::Manifest,
-    mode::Mode,
-    package::Package,
-};
+use crate::commands::CommandIF;
+
+use tailor::absolute_path::AbsolutePath;
+use tailor::external_tool::compiler::Compiler;
+use tailor::fmt::success;
+use tailor::manifest::Manifest;
+use tailor::mode::Mode;
+use tailor::package::Package;
+use tailor::sources::registry::Registry;
 
 use clap::{Args, ValueEnum};
 use std::{path::PathBuf, time::Instant};

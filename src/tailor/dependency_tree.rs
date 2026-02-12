@@ -1,4 +1,6 @@
-use crate::{external_tool::registry::Registry, manifest::Manifest, storage::Storage};
+use crate::manifest::Manifest;
+use crate::sources::registry::Registry;
+use crate::storage::Storage;
 
 #[derive(Clone)]
 pub struct DependencyTree {
